@@ -2,6 +2,8 @@
 
 Source of truth: [Rental_Agent_Prototype_Architecture.pdf](source/Rental_Agent_Prototype_Architecture.pdf). Searchable text: [architecture.txt](source/architecture.txt). Figures: [source/diagrams/](source/diagrams/).
 
+Change history and decisions: [CLAUDE_CHANGELOG.md](../CLAUDE_CHANGELOG.md).
+
 ## Documents
 
 - [PRD.md](PRD.md): purpose, goals, users, in-scope and out-of-scope items.

@@ -80,3 +80,38 @@ Comparison of the PDF with `README.md`, `HANDOVER.md`, `tests/test_acceptance.py
 | PA-12 | Fig. 7 caption vs §8 | "Nothing is changed by this flow", yet the flow writes `gaps` rows. | "Nothing" means no rates; `gaps` rows are written. |
 
 Reconciliation items recorded: 14 scaffold mismatches (SR-01 to SR-14) and 12 PDF ambiguities (PA-01 to PA-12).
+
+## Resolution status
+
+Updated after PR #2 (implementation) was merged on 2026-11-24. Decision IDs (D-xx) refer to [CLAUDE_CHANGELOG.md](../CLAUDE_CHANGELOG.md).
+
+| Item | Status | How |
+|------|--------|-----|
+| SR-01 | Resolved | `max_tokens` key in `config.yaml` (D-11) |
+| SR-02 | Resolved | `staff_email` in `config.yaml`, password from `STAFF_PASSWORD` in `.env` (D-03) |
+| SR-03 | Resolved | `enabled_tools` per role with the exact tool names (D-11) |
+| SR-04 | Resolved | `history_turns` key; price sheet at `data/price_sheet.json` (D-08) |
+| SR-05 | No change | Scaffold key names kept |
+| SR-06 | Resolved | Default `projects/<project>/data/app.db`, override with `DATABASE_PATH` (D-10) |
+| SR-07 | Resolved | `tests/test_live_bedrock.py`; `FakeModel` in `tests/conftest.py` |
+| SR-08, SR-09, SR-10 | Resolved | README "Run" and "Test", HANDOVER filled in |
+| SR-11 | Resolved in code | `auth.py` falls back to bcrypt when argon2 is unavailable; no bcrypt package added |
+| SR-12 | No change | Scaffold choices kept |
+| SR-13 | Open | Dockerfile only if Option B is pursued |
+| SR-14 | Resolved | UI built: chat, register/login, approval cards, parity panel, change log |
+| PA-01 | Resolved | D-06 |
+| PA-02 | Resolved | D-05 |
+| PA-07, PA-11 | Resolved | `load_project_config(project_name)` reads `projects/<project>/`; D-10 |
+| PA-08 | Resolved | D-12 |
+| PA-09 | Resolved | Approve returns the final state (`verified` or `failed`) |
+| PA-10 | Resolved | `aws_region` in `config.yaml` wins; `AWS_REGION` is used when it is a placeholder |
+| A-04 | Resolved (defaults) | D-13: password at least 8, KB search threshold 1; transcripts not persisted (D-04) |
+| A-07, A-10, A-16 | Resolved | Request bodies in [API.md](API.md#implemented-request-bodies-resolves-a-07) |
+| A-08, A-09 | Resolved | `history_turns: 6`, `max_tokens: 8000` |
+| A-11 | Resolved | D-03 |
+| A-12 | Resolved | A `traces` row is written only when the model was called |
+| A-13 | Open | `APP_SECRET_KEY` is still unused |
+| A-15 | Resolved | See SR-07 |
+| A-17 | Resolved | D-07, D-08 |
+| A-18 | Resolved | The citation check applies to the visitor role only |
+| A-19 | Resolved | KB front matter: `id`, `title`, `status`; ids are lowercase letters, digits and dashes |

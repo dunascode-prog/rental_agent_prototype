@@ -80,4 +80,10 @@ Preconditions and steps below are derived from the PDF's pipelines and data flow
 
 ## Current status
 
-All seven functions exist in `tests/test_acceptance.py` and call `pytest.skip("not implemented")`.
+All seven are implemented and pass (PR #2). The scripted fake model is `FakeModel` in `tests/conftest.py`. `tests/test_rules.py` covers the supporting rules: step limit, allowlist and schema errors, draft citations, stale proposals, rejection, hash mismatch, payment masking, auth and error codes. The optional live test is `tests/test_live_bedrock.py`, which runs only when `RUN_LIVE_BEDROCK=1` (resolves A-15 and SR-07).
+
+Implementation notes for the tests:
+
+- AC-3 follows PA-01 / D-06: the counter blocks when `message_count >= free_messages`, and blocked messages are counted too.
+- AC-4 uses the seeded mismatch on `L-100` / `channel_a` / 2026-12-05 (PMS 180, channel 175); 2026-12-07 has no channel rate and is reported as no data.
+- AC-6 runs for both a visitor and a staff session; the refusal row has `event = 'refusal'` and no `change_id` (D-05).
