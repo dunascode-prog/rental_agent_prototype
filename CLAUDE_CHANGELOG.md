@@ -8,6 +8,7 @@ Rules for this repository (set by the project owner, 2026-11-24):
 - Nothing is pushed to `main`. Every change goes through a pull request that the owner reviews and merges.
 - Architectural decisions are asked about before they are made.
 - Every change is logged in this file.
+- Every change, including the owner's own, is also appended to the append-only `CHANGELOG.md`; CI enforces it (added 2026-11-24).
 
 ---
 
@@ -33,7 +34,16 @@ These were made during the first implementation pass (2026-11-24), before the "a
 
 ---
 
-## 2026-11-24 — Docs synced with the implementation (PR: `claude/docs-sync`)
+## 2026-11-24 — Append-only CHANGELOG.md with a CI check (PR #4, `claude/changelog`)
+
+- Owner decisions (asked 2026-11-24): entries appended in each PR and enforced by CI; file `CHANGELOG.md` at the repo root; keep this file updated as well.
+- Added `CHANGELOG.md`, oldest first, backfilled with every commit and PR so far, including the owner's direct pushes. Authors are GitHub usernames; no emails, since the repo is public.
+- Added `scripts/check_changelog.py`: compares `CHANGELOG.md` at the merge base with the head. It fails if any existing line changed, or if other files changed without a new `## ` entry appended.
+- Added `.github/workflows/changelog.yml`: runs the check on every pull request and every push to `main` (read-only permissions).
+- Added `tests/test_check_changelog.py` (7 unit tests for the check).
+- Stacked on PR #3 so the two log files don't conflict.
+
+## 2026-11-24 — Docs synced with the implementation (PR #3, `claude/docs-sync`)
 
 - PR #1 and PR #2 were merged by the owner with no review comments. D-02 to D-13 shipped as written; they stay listed above so any of them can still be revisited.
 - `docs/ACCEPTANCE_TESTS.md`: "Current status" now describes the implemented tests instead of skipped placeholders.
