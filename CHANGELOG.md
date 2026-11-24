@@ -58,3 +58,10 @@ Claude also keeps `CLAUDE_CHANGELOG.md`, which holds the decision records in det
 
 ## 2026-11-24 · PR #8 · Claude
 - Brings PRs #4 to #7 into `main`. They were stacked PRs; each one merged into the branch below it instead of `main`, because GitHub only retargets a stacked PR when the branch below it is deleted on merge, and automatic branch deletion is off in this repository. No content changes beyond this entry and the matching note in `CLAUDE_CHANGELOG.md`.
+
+## 2026-11-24 · PR #9 · Claude
+- Bedrock client switched from Mantle (`AnthropicBedrockMantle`) back to InvokeModel (`AnthropicBedrock`), because the AWS account can't use Claude through Mantle. IAM permissions are now `bedrock:InvokeModel` and `bedrock:InvokeModelWithResponseStream` on the two models.
+- Model IDs can be set in `.env` as `BEDROCK_MODEL_CHAT` and `BEDROCK_MODEL_BACKOFFICE` (used when `config.yaml` keeps its placeholders).
+- Prompt caching now uses explicit breakpoints only: the system prompt and the newest message.
+- Added a back-office live test; updated README, `.env.example`, `config.yaml` comments and the docs.
+- Decisions: D-19 (switch fully to InvokeModel) decided by the owner.

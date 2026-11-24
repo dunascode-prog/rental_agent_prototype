@@ -36,8 +36,18 @@ These were made during the first implementation pass (2026-11-24), before the "a
 | D-16 | The hosted demo runs exactly one task: desired count 1, deployment minimum 0% and maximum 100%. Proposed in PR #7. | Two or more tasks, or rolling deploys with overlap. | SQLite on EFS is only safe with one writer; the cost is a short downtime on each deploy. |
 | D-17 | CloudFront adds a secret `X-Origin-Verify` header and the load balancer forwards only requests carrying it (403 otherwise). Proposed in PR #7. | Rely on the CloudFront IP prefix list alone. | The prefix list admits any CloudFront distribution; the header ties access to this one. |
 | D-18 | The session cookie's `Secure` flag comes from `SESSION_COOKIE_SECURE` (off by default). Proposed in PR #7. | Detect HTTPS from forwarded headers. | Behind CloudFront → HTTP load balancer the app can't see the original scheme reliably; an explicit switch is simpler. |
+| D-19 | **Decided by the owner (2026-11-24): switch fully from Mantle to InvokeModel (`AnthropicBedrock`), replacing D-01.** IAM is `bedrock:InvokeModel` + `bedrock:InvokeModelWithResponseStream` on the two models. Model IDs can come from `BEDROCK_MODEL_CHAT` / `BEDROCK_MODEL_BACKOFFICE` in `.env`. Caching uses explicit breakpoints only (system prompt + newest message). Proposed in PR #9. | Stay on Mantle and ask AWS to enable Claude for the account; or keep both behind a config switch. | The new account gets `403 not available for this account` for every Claude model on Mantle; the console-enabled models (Haiku 4.5, Sonnet 4.6) only work through InvokeModel. |
 
 ---
+
+## 2026-11-24 — Bedrock client back to InvokeModel (PR #9, `claude/bedrock-invokemodel`)
+
+- Live check (2026-11-24, account set up by the owner, SSO profile with the `RentalAgentDev` permission set, `us-east-1`): sign-in and SigV4 worked, but Mantle returned `404 does not exist` for the console model IDs and `403 not available for this account` for `anthropic.claude-haiku-4-5`, `anthropic.claude-sonnet-5` and `anthropic.claude-opus-5-5`. The owner chose to switch fully to InvokeModel (D-19).
+- `app/model.py`: `AnthropicBedrock` instead of `AnthropicBedrockMantle`. Caching drops the top-level `cache_control` (InvokeModel rejects it) and adds an explicit breakpoint on the newest message's last block, without changing the caller's list.
+- `app/config.py`: `model_chat` / `model_backoffice` fall back to `BEDROCK_MODEL_CHAT` / `BEDROCK_MODEL_BACKOFFICE` when they are placeholders, so real IDs stay out of git.
+- Tests: `tests/test_model.py` updated for the new caching shape, plus tests for the env fallback; `tests/test_live_bedrock.py` adds a back-office live test (staff login, parity check through tools). 35 passed, 2 skipped (live).
+- Docs: README, `.env.example`, `config.yaml` comments, ARCHITECTURE, SECURITY, REQUIREMENTS, DECISIONS (ADR-06 amendment), DEPLOYMENT (task role policy, task definition env vars).
+- Not verified yet: the live run itself (waits on the permission-set update); whether Sonnet 4.6 needs a `us.` inference-profile ID. Haiku 4.5 only caches prefixes of 4,096+ tokens, so the visitor prompt (about 600 tokens) will not be cached; Sonnet 4.6's minimum is 1,024.
 
 ## 2026-11-24 — Landing PRs #4 to #7 on main (PR #8, `claude/land-stacked-prs`)
 

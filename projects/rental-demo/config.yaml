@@ -21,7 +21,8 @@ enabled_tools:
      propose_change, get_change_status, handoff_to_human]
 
 # Bedrock model IDs. Visitor chat uses a Claude Haiku model, back-office a Claude Sonnet model.
-# Mantle model IDs carry the anthropic. prefix (anthropic.<model-name>); copy them from the Bedrock console.
+# Use the model or inference-profile ID from the Bedrock console (InvokeModel API), e.g. us.anthropic.<model-name>-v1:0.
+# Leave the placeholders here and set BEDROCK_MODEL_CHAT / BEDROCK_MODEL_BACKOFFICE in .env to keep real IDs out of git.
 model_chat: "<bedrock-model-id>"
 model_backoffice: "<bedrock-model-id>"
 

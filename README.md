@@ -30,8 +30,8 @@ cp .env.example .env   # then fill in local values
 For live model answers:
 
 1. In the Amazon Bedrock console, enable a Claude Haiku model (visitor chat) and a Claude Sonnet model (back-office).
-2. Put their model IDs (`anthropic.<model-name>`) and your region in `projects/rental-demo/config.yaml` (`model_chat`, `model_backoffice`, `aws_region`), or set `AWS_REGION` in `.env`.
-3. Give your AWS profile (`AWS_PROFILE` in `.env`) the `bedrock-mantle:CreateInference` permission on those models.
+2. Put their model or inference-profile IDs (for example `us.anthropic.<model-name>-v1:0`) in `.env` as `BEDROCK_MODEL_CHAT` and `BEDROCK_MODEL_BACKOFFICE`, and your region as `AWS_REGION`. Setting `model_chat`, `model_backoffice` and `aws_region` in `projects/rental-demo/config.yaml` also works, but then the IDs end up in git.
+3. Give your AWS profile (`AWS_PROFILE` in `.env`) the `bedrock:InvokeModel` and `bedrock:InvokeModelWithResponseStream` permissions on those models.
 4. Set `STAFF_PASSWORD` in `.env` to enable the staff login (`staff_email` in `config.yaml`).
 
 Without model IDs or AWS credentials the app still runs: guardrails, registration, parity and approvals all work, and chat turns that need the model return a safe fallback reply.
