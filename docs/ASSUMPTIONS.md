@@ -83,7 +83,7 @@ Reconciliation items recorded: 14 scaffold mismatches (SR-01 to SR-14) and 12 PD
 
 ## Resolution status
 
-Updated after PR #2 (implementation) was merged on 2026-11-24. Decision IDs (D-xx) refer to [CLAUDE_CHANGELOG.md](../CLAUDE_CHANGELOG.md).
+Updated after PR #2 (implementation) was merged on 2026-11-24, and again after the live Bedrock check (PR #9, 2026-11-24). Decision IDs (D-xx) refer to [CLAUDE_CHANGELOG.md](../CLAUDE_CHANGELOG.md).
 
 | Item | Status | How |
 |------|--------|-----|
@@ -97,7 +97,7 @@ Updated after PR #2 (implementation) was merged on 2026-11-24. Decision IDs (D-x
 | SR-08, SR-09, SR-10 | Resolved | README "Run" and "Test", HANDOVER filled in |
 | SR-11 | Resolved in code | `auth.py` falls back to bcrypt when argon2 is unavailable; no bcrypt package added |
 | SR-12 | No change | Scaffold choices kept |
-| SR-13 | Open | Dockerfile only if Option B is pursued |
+| SR-13 | Resolved | `Dockerfile` and `docs/DEPLOYMENT.md` added for Option B (PR #7); not yet deployed |
 | SR-14 | Resolved | UI built: chat, register/login, approval cards, parity panel, change log |
 | PA-01 | Resolved | D-06 |
 | PA-02 | Resolved | D-05 |
@@ -105,7 +105,9 @@ Updated after PR #2 (implementation) was merged on 2026-11-24. Decision IDs (D-x
 | PA-08 | Resolved | D-12 |
 | PA-09 | Resolved | Approve returns the final state (`verified` or `failed`) |
 | PA-10 | Resolved | `aws_region` in `config.yaml` wins; `AWS_REGION` is used when it is a placeholder |
+| A-01 | Resolved (tested) | Live check used Claude Haiku 4.5 (visitor) and Claude Sonnet 4.6 (back-office), the newest Haiku and Sonnet the account could enable; IDs come from `.env`, no code change (D-19) |
 | A-04 | Resolved (defaults) | D-13: password at least 8, KB search threshold 1; transcripts not persisted (D-04) |
+| A-06 | Resolved (us-east-1) | Both models answer through InvokeModel with the `us.` inference-profile IDs; both live tests pass. Caveat: the project's own AWS account still returns `Operation not allowed` (AWS-side), so the check ran from the organization's management account |
 | A-07, A-10, A-16 | Resolved | Request bodies in [API.md](API.md#implemented-request-bodies-resolves-a-07) |
 | A-08, A-09 | Resolved | `history_turns: 6`, `max_tokens: 8000` |
 | A-11 | Resolved | D-03 |

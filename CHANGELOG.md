@@ -66,3 +66,6 @@ Claude also keeps `CLAUDE_CHANGELOG.md`, which holds the decision records in det
 - Added a back-office live test; updated README, `.env.example`, `config.yaml` comments and the docs.
 - Decisions: D-19 (switch fully to InvokeModel) decided by the owner.
 - Live check passed (2026-11-24) for both roles. Sonnet 4.6 must be called through its `us.` inference profile. Tests ran from the management account while AWS enables Bedrock for the project account.
+
+## 2026-11-24 · PR #10 · Claude
+- Documentation only: recorded the live Bedrock results in `docs/ASSUMPTIONS.md` (A-01 and A-06 resolved, SR-13 resolved), `docs/ACCEPTANCE_TESTS.md` (both live tests passed) and `docs/REQUIREMENTS.md` (ENV-05 confirmed; full list of environment variables).
