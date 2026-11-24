@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -92,6 +93,14 @@ class Project:
         return next((item for item in self.listings if item.get("listing_id") == listing_id), None)
 
 
+def _model_id(raw: dict[str, Any], key: str, env_var: str) -> str:
+    """Model ID from config.yaml; if that is a placeholder, from the env var (keeps real IDs out of git)."""
+    value = str(raw[key])
+    if is_placeholder(value):
+        value = os.getenv(env_var) or value
+    return value
+
+
 def is_placeholder(value: Any) -> bool:
     text = str(value or "").strip()
     return not text or (text.startswith("<") and text.endswith(">")) or text.upper().startswith("TODO")
@@ -118,7 +127,10 @@ def load_project_config(project_name: str, projects_root: Path | None = None) ->
         persona=str(raw["persona"]).strip(),
         free_messages=_int(raw, "free_messages", minimum=0),
         tools=_parse_tools(raw["enabled_tools"]),
-        models={VISITOR_ROLE: str(raw["model_chat"]), BACKOFFICE_ROLE: str(raw["model_backoffice"])},
+        models={
+            VISITOR_ROLE: _model_id(raw, "model_chat", "BEDROCK_MODEL_CHAT"),
+            BACKOFFICE_ROLE: _model_id(raw, "model_backoffice", "BEDROCK_MODEL_BACKOFFICE"),
+        },
         aws_region=None if is_placeholder(raw["aws_region"]) else str(raw["aws_region"]),
         effort=_parse_effort(raw.get("effort")),
         max_tokens=_int(raw, "max_tokens", default=8000, minimum=256),

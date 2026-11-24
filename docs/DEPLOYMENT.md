@@ -20,11 +20,11 @@ Reviewer browser ──HTTPS──▶ CloudFront (*.cloudfront.net)
                  ECS Fargate service, exactly 1 task (public subnet, public IP for outbound)
                  · container rental-agent-prototype, port 8000, user uid 1000
                  · /data ← EFS access point (SQLite file /data/app.db)
-                 · task role: bedrock-mantle:CreateInference only
+                 · task role: bedrock:InvokeModel on the two models only
                  · STAFF_PASSWORD from Secrets Manager
                                 │
                                 ▼
-                 Amazon Bedrock (Mantle endpoint), same region as config.yaml
+                 Amazon Bedrock (InvokeModel API), region from AWS_REGION
 ```
 
 Trade-offs you accepted for a demo:
@@ -37,9 +37,9 @@ Trade-offs you accepted for a demo:
 - An AWS account and a region where the Claude models are enabled in Bedrock (assumption A-06).
 - The AWS CLI v2, signed in with an admin-level profile for the setup.
 - Docker on the machine that builds the image. CI also builds it on every PR (the `docker` check).
-- In `projects/rental-demo/config.yaml`: the real model IDs (`anthropic.<model-name>`) and `aws_region`. Keep that edit in your deployment copy if you don't want IDs in git.
+- The two Bedrock model or inference-profile IDs (for example `us.anthropic.<model-name>-v1:0`). They go into the task definition as `BEDROCK_MODEL_CHAT` and `BEDROCK_MODEL_BACKOFFICE`, so they stay out of git.
 
-Placeholders used below: `<region>`, `<account-id>`, `<vpc-id>`, `<public-subnet-a>`, `<public-subnet-b>`, `<model-arn-chat>`, `<model-arn-backoffice>`, `<secret-arn>`, `<origin-secret>`. Never commit real values.
+Placeholders used below: `<region>`, `<account-id>`, `<vpc-id>`, `<public-subnet-a>`, `<public-subnet-b>`, `<model-chat>`, `<model-backoffice>`, `<base-model-chat>`, `<base-model-backoffice>`, `<secret-arn>`, `<origin-secret>`. Never commit real values.
 
 ## 3. Steps
 
@@ -95,12 +95,21 @@ Note the file system ID and the access point ID.
 {
   "Version": "2012-10-17",
   "Statement": [
-    { "Effect": "Allow", "Action": "bedrock-mantle:CreateInference", "Resource": ["<model-arn-chat>", "<model-arn-backoffice>"] }
+    {
+      "Effect": "Allow",
+      "Action": ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"],
+      "Resource": [
+        "arn:aws:bedrock:*:<account-id>:inference-profile/<model-chat>",
+        "arn:aws:bedrock:*:<account-id>:inference-profile/<model-backoffice>",
+        "arn:aws:bedrock:*::foundation-model/<base-model-chat>",
+        "arn:aws:bedrock:*::foundation-model/<base-model-backoffice>"
+      ]
+    }
   ]
 }
 ```
 
-Copy the model ARNs from the Bedrock console. The Mantle IAM action comes from the Anthropic "Claude in Amazon Bedrock" guide and the AWS Bedrock Mantle guide (decision D-01). No AWS keys go into the container: the SDK picks up the task role automatically.
+`<model-chat>` and `<model-backoffice>` are the inference-profile IDs the app calls (for example `us.anthropic.<model-name>-v1:0`); `<base-model-...>` are the same IDs without the `us.` prefix. A cross-region inference profile can route a call to another region in its geography, so the foundation-model ARNs use `*` for the region. If a model is called by its base ID with no profile, only its foundation-model line is needed (decision D-19). No AWS keys go into the container: the SDK picks up the task role automatically.
 
 ### 3.6 Task definition
 
@@ -123,6 +132,8 @@ Fargate, platform version `LATEST` (EFS needs 1.4.0 or later), 0.5 vCPU and 1 GB
       "portMappings": [{ "containerPort": 8000, "protocol": "tcp" }],
       "environment": [
         { "name": "AWS_REGION", "value": "<region>" },
+        { "name": "BEDROCK_MODEL_CHAT", "value": "<model-chat>" },
+        { "name": "BEDROCK_MODEL_BACKOFFICE", "value": "<model-backoffice>" },
         { "name": "PROJECT_NAME", "value": "rental-demo" },
         { "name": "DATABASE_PATH", "value": "/data/app.db" },
         { "name": "SESSION_COOKIE_SECURE", "value": "1" }
@@ -201,4 +212,4 @@ Open `https://<id>.cloudfront.net` once the distribution is deployed.
 ## 6. Not verified
 
 - These steps were written from AWS and Anthropic documentation and haven't been run end to end yet. The image build and `/health` start-up are checked in CI.
-- The exact model ARN format for the IAM policy: copy it from the Bedrock console.
+- The IAM resources for cross-region inference profiles: if a call is denied, compare the ARN in the error message with the policy.
