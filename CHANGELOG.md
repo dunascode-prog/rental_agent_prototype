@@ -55,3 +55,6 @@ Claude also keeps `CLAUDE_CHANGELOG.md`, which holds the decision records in det
 - Added `docs/DEPLOYMENT.md`: step-by-step hosted demo on ECS Fargate + EFS behind a public load balancer that only CloudFront can reach, using CloudFront's default HTTPS address.
 - `SESSION_COOKIE_SECURE=1` marks the session cookie Secure for HTTPS deployments (new in `.env.example`); test added.
 - Decisions: owner chose ECS Fargate + EFS, Dockerfile plus a guide (no infrastructure as code), CloudFront's default HTTPS URL (no domain yet), and a public load balancer limited to CloudFront; D-16 (exactly one task) and D-17 (secret origin header) proposed for review.
+
+## 2026-11-24 · PR #8 · Claude
+- Brings PRs #4 to #7 into `main`. They were stacked PRs; each one merged into the branch below it instead of `main`, because GitHub only retargets a stacked PR when the branch below it is deleted on merge, and automatic branch deletion is off in this repository. No content changes beyond this entry and the matching note in `CLAUDE_CHANGELOG.md`.

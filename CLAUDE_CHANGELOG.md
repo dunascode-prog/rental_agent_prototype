@@ -39,6 +39,12 @@ These were made during the first implementation pass (2026-11-24), before the "a
 
 ---
 
+## 2026-11-24 — Landing PRs #4 to #7 on main (PR #8, `claude/land-stacked-prs`)
+
+- PRs #4 to #7 were stacked and each merged into the branch below it (`claude/docs-sync`, `claude/changelog`, `claude/ci-tests`, `claude/prompt-caching`), not into `main`. GitHub retargets a stacked PR to `main` only when its base branch is deleted on merge, and "Automatically delete head branches" is off in this repository.
+- This PR merges `claude/prompt-caching` (which holds #4 to #7) into `main`. No other content changes.
+- Lesson: before stacking PRs again, either turn on automatic branch deletion or merge each PR into `main` before opening the next.
+
 ## 2026-11-24 — Docker image and hosted demo guide (PR #7, `claude/docker`)
 
 - Owner decisions (asked 2026-11-24): ECS Fargate + EFS; Dockerfile plus a step-by-step guide, no infrastructure as code; no domain yet, so CloudFront's default HTTPS URL; a public load balancer that only CloudFront can reach (not VPC origins + NAT). The live Bedrock check is postponed until AWS is ready.
