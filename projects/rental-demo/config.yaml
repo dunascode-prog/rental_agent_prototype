@@ -1,0 +1,29 @@
+# Project configuration for the rental-demo assistant. Placeholder values only.
+
+# Display name of the business / assistant.
+name: "TODO: business name"
+
+# Persona and tone the assistant uses with visitors.
+persona: "TODO: persona description"
+
+# Number of free visitor messages before the limit applies.
+free_messages: 5
+
+# Tools the agent is allowed to use.
+enabled_tools:
+  - "TODO: tool_name"
+
+# Bedrock model ID for the visitor-facing chat.
+model_chat: "TODO: bedrock model id"
+
+# Bedrock model ID for back-office tasks (e.g. rate proposals).
+model_backoffice: "TODO: bedrock model id"
+
+# AWS region for Bedrock calls.
+aws_region: "TODO: aws region"
+
+# Allowed rate difference across channels before flagging a parity issue.
+parity_tolerance: 0
+
+# Only knowledge-base entries with this status are used to answer.
+kb_status_required: "approved"
