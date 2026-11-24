@@ -1,5 +1,7 @@
 # Handover
 
+Full project documentation: [docs/INDEX.md](docs/INDEX.md).
+
 ## How to run
 
 TODO

@@ -1,0 +1,512 @@
+
+===== Page 1 =====
+Rental Agent Prototype: architecture and data flows
+Page 1
+Rental Agent Prototype
+Architecture, data flows and AI pipeline
+Scope: one configurable AI assistant per project, with approval-gated actions, an
+append-only change log, and a message limit for website visitors. Runs locally first; optional
+AWS deployment. Model provider: Amazon Bedrock (Claude).
+Status: design baseline for the prototype build. Items marked [ASSUMPTION] are not yet
+confirmed.
+
+===== Page 2 =====
+Rental Agent Prototype: architecture and data flows
+Page 2
+Contents
+• 1. Purpose and scope of the prototype
+• 2. Service architecture (Figures 1 to 4)
+• 3. AI pipeline (Figures 5 and 6)
+• 4. Data flows (Figures 7 to 9)
+• 5. Trust boundaries and security (Figure 10)
+• 6. Component reference
+• 7. API reference
+• 8. Tool reference
+• 9. Change lifecycle and approval rules
+• 10. Acceptance tests mapped to the diagrams
+• 11. Assumptions, limits and what comes after the prototype
+
+===== Page 3 =====
+Rental Agent Prototype: architecture and data flows
+Page 3
+1. Purpose and scope of the prototype
+The prototype is a small, working version of the two-agent system in the job specification. It keeps the rules that
+matter most: answers come only from approved content, changes need a named approver, every action is
+logged, and guest messaging is refused. It uses mock data for the property management system and the
+booking channels, and does not connect to real payment or booking systems.
+What the prototype does
+• Answers website visitor questions from approved knowledge-base files, citing the file used. If the answer is
+not in those files, it offers a hand-off to a person and does not guess.
+• Allows five free visitor messages, then asks the visitor to register. The count is kept on the server.
+• Compares rates between a mock property system and a mock booking channel, and reports each difference
+as a gap.
+• Proposes a rate change. Nothing changes until a named person approves it; the change is then applied and
+re-read to verify it.
+• Keeps a change log that the application cannot edit or delete.
+• Refuses any request to message, email or contact a guest, and logs the refusal. No messaging tool exists.
+What the prototype does not do
+• Connect to a real property management system, booking channel, billing system or payment provider.
+• Provide the Chrome extension, multiple approvers, roles, several languages, date changes or payment
+requests.
+• Use vector search. The approved knowledge base is loaded into the model's context.
+
+===== Page 4 =====
+Rental Agent Prototype: architecture and data flows
+Page 4
+2. Service architecture
+The service is one FastAPI process with one SQLite file. A browser page talks to it over HTTP. The process
+calls Amazon Bedrock for model responses and reads the project folder for content. Figure 1 shows who uses
+it, Figure 2 shows the internal components, Figure 3 shows where it can run, and Figure 4 shows the tables.
+Figure 1. System context. Staff, visitors and the project owner interact with one application, which calls Bedrock and reads
+content and mock data files.
+
+===== Page 5 =====
+Rental Agent Prototype: architecture and data flows
+Page 5
+Figure 2. Component architecture. Arrows show the request paths. Numbered arrows show the order inside a chat turn:
+checks, then the agent, then the output check.
+
+===== Page 6 =====
+Rental Agent Prototype: architecture and data flows
+Page 6
+Figure 3. Deployment. Option A is the default. Option B only if a live link is needed. A container service without a persistent
+volume loses the SQLite data on restart, so it must use a volume or a different database before any shared demo.
+
+===== Page 7 =====
+Rental Agent Prototype: architecture and data flows
+Page 7
+Figure 4. Data model. The change_log table is append-only: triggers reject UPDATE and DELETE. Rates in pms_rates are
+changed only through the approval flow.
+
+===== Page 8 =====
+Rental Agent Prototype: architecture and data flows
+Page 8
+3. AI pipeline
+The prototype runs two roles on the same runtime. Each role has its own model, its own tool list and its own
+guardrails. The checks that decide whether something is allowed run in code, before and after the model. The
+model only decides what to say and which allowed tool to request.
+Model roles
+Role
+Used for
+Model (set in config.yaml)
+Tools
+Visitor chat (sales)
+Website visitors, KB answers, price
+questions, hand-off
+Claude Haiku, from the
+Bedrock console
+search_kb, get_price_sheet,
+handoff_to_sales
+Back-office
+Staff questions, parity checks,
+proposed rate changes
+Claude Sonnet, from the
+Bedrock console
+get_listing, get_reservation,
+run_parity_check, list_gaps,
+propose_change,
+get_change_status,
+handoff_to_human
+Model IDs are not written in this document. Copy the exact ID and region from the Bedrock console once model access is enabled.
+[ASSUMPTION: the model choice may change after testing.]
+
+===== Page 9 =====
+Rental Agent Prototype: architecture and data flows
+Page 9
+Figure 5. Visitor chat pipeline. Stages 1 and 2 run before the model is called, so refusals and the registration prompt cost
+nothing and cannot be talked around. Stage 6 replaces any answer without an approved citation with a hand-off offer.
+
+===== Page 10 =====
+Rental Agent Prototype: architecture and data flows
+Page 10
+Figure 6. Back-office pipeline. Read tools have no side effects. Write tools only create pending rows or gap rows. Only the
+approval gate can lead to a rate change, and the change is verified by reading it back.
+
+===== Page 11 =====
+Rental Agent Prototype: architecture and data flows
+Page 11
+Agent loop rules (both roles)
+• The loop stops after 8 model calls and returns a safe fallback reply.
+• A tool request that is not on the allowlist, or whose input does not match its schema, returns an error to the
+model and has no side effects.
+• Each turn writes one traces row: model ID, tools called, token counts and elapsed time.
+• The model never receives credentials, and the system prompt contains only approved content for the
+project.
+
+===== Page 12 =====
+Rental Agent Prototype: architecture and data flows
+Page 12
+4. Data flows
+The next three figures show how data moves for the three main operations that do not involve the model: the
+parity check, the lifecycle of a rate change, and the visitor's journey through the message limit.
+Figure 7. Parity check. Two reads, one join, one comparison. Missing values are reported as 'no data' and are not counted
+as gaps. Nothing is changed by this flow.
+
+===== Page 13 =====
+Rental Agent Prototype: architecture and data flows
+Page 13
+Figure 8. Change lifecycle. The state changes shown are the only way a rate changes. Each transition writes one
+change_log row.
+
+===== Page 14 =====
+Rental Agent Prototype: architecture and data flows
+Page 14
+Figure 9. Visitor journey. Messages one to five are answered. Message six is answered with a registration prompt. A visitor
+who registers gets unlimited chat for their account.
+
+===== Page 15 =====
+Rental Agent Prototype: architecture and data flows
+Page 15
+5. Trust boundaries and security
+Figure 10. Trust boundaries. Visitor text and model output are untrusted. Every rule that matters is enforced in server code,
+not in the prompt. AWS credentials are used only by the Bedrock client.
+Security rules for the prototype
+• Passwords are hashed with argon2 (or bcrypt if argon2 is not available). Passwords are never logged.
+• Credentials and keys live in an AWS profile or environment variables, never in project files. The real .env file
+is excluded from version control.
+• Payment details, where they appear in mock reservations, are masked to the last four digits in every output
+and log.
+• Database access uses parameterised queries only.
+• The change_log table is protected by database triggers, so the application cannot rewrite its own history.
+• The Bedrock IAM permission is limited to model invocation.
+
+===== Page 16 =====
+Rental Agent Prototype: architecture and data flows
+Page 16
+6. Component reference
+Component (file)
+Responsibility
+Inputs
+Outputs
+Depends on
+main.py
+HTTP routes, request validation,
+session cookie
+HTTP requests
+JSON responses,
+HTML page
+all modules
+config.py
+Loads project folder, validates
+config.yaml, KB and data files
+projects//
+Project object
+yaml, filesystem
+db.py
+Schema, triggers, seed data from
+data/*.json
+config, JSON seeds
+SQLite tables
+sqlite3
+guardrails.py
+Intent check, message counter,
+output citation check
+visitor or staff text,
+session
+allow, refuse or
+fallback decision
+db.py
+agent.py
+Model loop, step limit, trace writing
+messages, allowed
+tools
+final reply
+model.py, tools.py,
+guardrails.py
+model.py
+Bedrock client wrapper, one
+complete() function
+messages, tool
+schemas, model ID
+model response
+anthropic SDK,
+AWS credentials
+tools.py
+Tool schemas and
+implementations, allowlist per
+project
+tool name and input
+tool result or error
+parity.py,
+changes.py,
+config.py
+parity.py
+Compares PMS and channel rates,
+writes gaps
+listing, date range
+gaps list, run ID
+db.py
+changes.py
+State machine, approvals, hashes,
+apply and verify, change log
+proposals, approvals
+change state
+db.py
+auth.py
+Registration and password hashing
+email, password
+user row
+db.py, argon2
+static/index.html
+Chat, parity, approval cards,
+change log, register form
+user actions
+HTTP calls
+main.py routes
+
+===== Page 17 =====
+Rental Agent Prototype: architecture and data flows
+Page 17
+7. API reference
+Method and path
+Purpose
+Auth
+Success
+Main errors
+GET /health
+Liveness check
+none
+200 {status: ok}
+none
+POST /api/chat
+One visitor or staff chat turn
+session cookie
+200 reply and state
+400 bad input, 429 too
+many requests
+POST /api/register
+Create an account
+none
+201 user created
+409 email exists, 400
+invalid
+GET /api/parity
+Gaps for a listing
+session (staff)
+200 gaps list
+404 unknown listing
+POST /api/parity/run
+Run a parity check
+session (staff)
+200 run summary
+409 run already active
+POST /api/changes
+Propose a rate change
+session (staff)
+201 pending
+change
+409 before value is stale,
+400 invalid
+POST
+/api/changes/{id}/approve
+Approve with approver
+name
+session (staff)
+200 approved, then
+applied
+403 no name, 409 hash
+mismatch or wrong state
+POST
+/api/changes/{id}/reject
+Reject a pending change
+session (staff)
+200 rejected
+409 wrong state
+GET /api/changelog
+Read the change log
+session (staff)
+200 log rows
+none
+Staff routes need a logged-in session. The prototype has a single staff login per project; [ASSUMPTION: staff accounts are created
+by the project owner in config, not by self-service registration.]
+
+===== Page 18 =====
+Rental Agent Prototype: architecture and data flows
+Page 18
+8. Tool reference
+Tool
+Role
+Input
+Side effect
+Notes
+search_kb
+Visitor chat
+query
+none
+Returns approved entries with
+IDs
+get_price_sheet
+Visitor chat
+plan
+none
+Only source of prices
+handoff_to_sales
+Visitor chat
+summary
+handoffs row
+Used when the KB has no
+answer
+get_listing
+Back-office
+listing_id
+none
+Reads mock PMS data
+get_reservation
+Back-office
+reservation_id
+none
+Payment details masked
+run_parity_check
+Back-office
+listing_id, start, end
+gaps rows
+Never changes rates
+list_gaps
+Back-office
+listing_id
+none
+Open gaps only
+propose_change
+Back-office
+type, target, before, after
+changes row
+(pending)
+Rejects stale before values
+get_change_status
+Back-office
+change_id
+none
+Shows state history
+handoff_to_human
+Back-office
+reason
+handoffs row
+Used when staff need a
+person
+There is no messaging tool for either role. Guest messaging is refused before the model runs, and the refusal is logged.
+
+===== Page 19 =====
+Rental Agent Prototype: architecture and data flows
+Page 19
+9. Change lifecycle and approval rules
+State
+Meaning
+Allowed next states
+Trigger
+proposed
+Change row created
+awaiting_approval,
+rejected_at_proposal
+propose_change succeeded
+awaiting_approval
+Waiting for a person
+approved, rejected
+Approval card shown
+approved
+Named approver recorded
+applied
+Approve endpoint, hash
+matches
+applied
+Value written to pms_rates or
+channel_rates
+verified, failed
+Apply step finished
+verified
+Re-read value equals the after
+value
+none (end)
+Verification passed
+failed
+Re-read does not match
+none (end; alert shown)
+Verification failed
+rejected
+Person rejected the change
+none (end)
+Reject endpoint
+rejected_at_proposal
+Before value no longer matches
+PMS
+none (end)
+Stale check failed
+• Approval is valid only for the exact change it was given for: the approval row stores the change_hash, and
+the approve endpoint recomputes the hash before accepting.
+• Apply and the state change run in one database transaction. If the transaction fails, nothing is written.
+• Each transition writes one change_log row containing the previous state, the new state, the actor, the
+payload hash and the time.
+
+===== Page 20 =====
+Rental Agent Prototype: architecture and data flows
+Page 20
+10. Acceptance tests mapped to the diagrams
+Test
+Behaviour checked
+Diagram
+Pass condition
+AC-1
+Knowledge question returns a cited answer
+Fig. 5 stages 3 to 7
+Reply contains an approved [kb:ID]
+AC-2
+Unknown question returns a hand-off, no
+guess
+Fig. 5 stage 6
+Hand-off offer, handoffs row written
+AC-3
+Sixth visitor message returns the registration
+prompt
+Fig. 5 stage 2, Fig. 9
+Prompt returned; model not called
+AC-4
+Seeded rate mismatch is reported, nothing
+changes
+Fig. 7
+gaps row exists; pms_rates
+unchanged
+AC-5
+Change has no effect until approved; then
+applied and logged
+Fig. 6, Fig. 8
+Applied only after approval; log rows
+present
+AC-6
+Guest-messaging request is refused and
+logged
+Fig. 5 stage 1, Fig. 6
+Refusal text; log row; model not called
+AC-7
+change_log rows cannot be updated or
+deleted
+Fig. 4, Fig. 10
+UPDATE and DELETE both fail
+Each test is one function in tests/test_acceptance.py. The model is replaced by a scripted fake in every test except one optional live
+test that runs against Bedrock when AWS credentials are present.
+
+===== Page 21 =====
+Rental Agent Prototype: architecture and data flows
+Page 21
+11. Assumptions, limits and what comes after the
+prototype
+Assumptions (to confirm)
+• [ASSUMPTION] Mock data stands in for the property management system and booking channels. Real
+connectors are a later phase.
+• [ASSUMPTION] The retrieval threshold, password length and transcript retention are defaults (see the
+assumptions register in the docs folder).
+• [ASSUMPTION] Local development is the default. A hosted demo is optional and needs a persistent volume
+or another database.
+• [ASSUMPTION] Claude models on Bedrock are available in the chosen region and enabled for the account.
+Known limits of the prototype
+• Clearing cookies starts a new visitor session, so the message limit can be reset this way. Accepted for the
+prototype.
+• No email verification after registration.
+• A single approver per project. No roles.
+• Only the rate-update change type is built. Date changes and payment requests are designed but not
+implemented.
+• Model cost depends on usage; Bedrock access and pricing must be checked before use.
+After the prototype (not in scope)
+• Real PMS connectors (API first, Playwright browser fallback), then real channel connectors.
+• Chrome extension for the back-office chat and approval cards.
+• Stripe test-mode checkout, upgrade, downgrade and cancellation.
+• Vector search for larger knowledge bases; PostgreSQL with pgvector.
+• Multiple approvers, roles, email verification, monitoring and alerting.
