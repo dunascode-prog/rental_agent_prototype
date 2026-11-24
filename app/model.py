@@ -26,6 +26,7 @@ class ModelClient(Protocol):
         tools: list[dict[str, Any]],
         max_tokens: int,
         effort: str | None = None,
+        cache: bool = False,
     ) -> Any: ...
 
 
@@ -58,6 +59,7 @@ class BedrockModel:
         tools: list[dict[str, Any]],
         max_tokens: int,
         effort: str | None = None,
+        cache: bool = False,
     ) -> Any:
         if is_placeholder(model_id):
             raise ModelError("No Bedrock model ID configured in config.yaml.")
@@ -68,6 +70,11 @@ class BedrockModel:
             "messages": messages,
             "tools": tools,
         }
+        if cache:
+            # Prompt caching: an explicit breakpoint at the end of the static prefix (tools + system prompt
+            # with the approved KB), plus top-level automatic caching for the growing conversation tail.
+            kwargs["system"] = [{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}]
+            kwargs["cache_control"] = {"type": "ephemeral"}
         if effort:
             kwargs["output_config"] = {"effort": effort}
         try:

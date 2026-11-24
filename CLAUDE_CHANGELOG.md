@@ -31,8 +31,21 @@ These were made during the first implementation pass (2026-11-24), before the "a
 | D-11 | `config.yaml` restructured: `enabled_tools` is per role; added `staff_email`, `max_tokens`, `history_turns`, optional `effort`, `password_min_length`, `retrieval_min_score`, `chat_rate_limit_per_minute`. | Keep the scaffold's flat keys. | Resolves SR-01 to SR-04 in docs/ASSUMPTIONS.md. |
 | D-12 | `POST /api/chat` returns 429 after 20 requests a minute per session (in memory). | No rate limit. | The PDF lists 429 for chat without a trigger (PA-08). |
 | D-13 | Defaults: password at least 8 characters; KB search needs at least 1 matching word; `max_tokens` 8000. | Other values. | The PDF says these are defaults but gives no values (A-04). |
+| D-14 | Prompt caching uses the default 5-minute cache and is on by default (`prompt_caching: true`). Proposed in PR #6. | 1-hour cache (costs 2x on writes), or off by default. | Chat turns in one visit usually come within minutes; a 1-hour cache only pays off for long pauses. |
+| D-15 | `traces.input_tokens` counts uncached + cache-written + cache-read tokens. Proposed in PR #6. | Count uncached tokens only, or add cache columns to `traces` (a Fig. 4 schema change). | Keeps the Fig. 4 schema and keeps the column meaning "all input processed". |
 
 ---
+
+## 2026-11-24 — Prompt caching (PR #6, `claude/prompt-caching`)
+
+- Owner chose prompt caching (2026-11-24). Bedrock supports both explicit and automatic prompt caching (SDK docs, platform availability table).
+- `app/model.py`: `complete(..., cache=True)` sends the system prompt as a text block with `cache_control: {type: ephemeral}`, and sets top-level `cache_control` for the conversation tail. With `cache=False`, the request is unchanged from before.
+- `app/agent.py`: passes `project.prompt_caching`; sums cache read and write tokens into `traces.input_tokens` (D-15); logs cache read/write per call at debug level.
+- `app/config.py` and `config.yaml`: new `prompt_caching` key (default `true`, D-14).
+- `tests/test_model.py`: 4 tests: the request shape with caching on and off, a placeholder model ID is refused with no request sent, and the agent passes the flag and counts cached tokens.
+- `docs/AI_PIPELINE.md`: stage 4 notes caching.
+- The system prompt holds no timestamps or per-request values, and tools are sent in a fixed order, so the cached prefix stays stable across requests.
+- Stacked on PR #5.
 
 ## 2026-11-24 — CI test workflow (PR #5, `claude/ci-tests`)
 
