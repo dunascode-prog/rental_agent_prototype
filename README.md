@@ -44,6 +44,18 @@ uvicorn app.main:app --env-file .env
 
 Open http://localhost:8000. Visitors get 5 free messages, then a registration prompt. Log in with the staff email and `STAFF_PASSWORD` to see the approval cards, the parity panel and the change log.
 
+With Docker:
+
+```bash
+docker build -t rental-agent-prototype .
+docker run -p 8000:8000 --env-file .env -v rental-agent-data:/data \
+  -v ~/.aws:/home/appuser/.aws:ro rental-agent-prototype
+```
+
+The `~/.aws` mount (read-only) lets the container use the `AWS_PROFILE` from `.env`; leave it out if you don't need live model answers.
+
+For a hosted demo on AWS (ECS Fargate + EFS behind CloudFront), follow [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+
 ## Test
 
 ```bash
@@ -52,6 +64,9 @@ python -m pytest -q
 
 The model is replaced by a scripted fake, so tests need no AWS access. The optional live test runs against Bedrock when `RUN_LIVE_BEDROCK=1` and AWS credentials and model IDs are configured.
 
+GitHub Actions runs two checks on every pull request and push to `main`: `tests` (the suite above) and `changelog` (see below).
+
 ## Change log
 
-Every change made by Claude is recorded in [CLAUDE_CHANGELOG.md](CLAUDE_CHANGELOG.md), including decisions awaiting review.
+- [CHANGELOG.md](CHANGELOG.md): append-only record of every change to the repository. Every pull request appends an entry at the end; the `changelog` check fails if an existing line is edited or an entry is missing.
+- [CLAUDE_CHANGELOG.md](CLAUDE_CHANGELOG.md): Claude's detailed change notes and decision records.

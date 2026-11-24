@@ -34,6 +34,10 @@ max_tokens: 8000
 # Number of previous turns of this session sent to the model (Fig. 5 stage 3).
 history_turns: 6
 
+# Prompt caching on Bedrock (5-minute cache): reuses the system prompt, approved KB and
+# earlier turns across model calls to cut cost and latency. Set to false to turn it off.
+prompt_caching: true
+
 # Optional effort per role (low, medium, high). Leave unset if your model does not support it.
 # effort:
 #   visitor_chat: low

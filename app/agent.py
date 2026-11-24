@@ -117,14 +117,19 @@ def run_turn(
                 tools=definitions,
                 max_tokens=project.max_tokens,
                 effort=project.effort.get(role),
+                cache=project.prompt_caching,
             )
         except ModelError as exc:
             log.warning("model call failed: %s", exc)
             break
         calls += 1
         usage = getattr(response, "usage", None)
-        input_tokens += getattr(usage, "input_tokens", 0) or 0
+        cache_read = getattr(usage, "cache_read_input_tokens", 0) or 0
+        cache_write = getattr(usage, "cache_creation_input_tokens", 0) or 0
+        # traces.input_tokens holds all input processed: uncached + written to cache + read from cache.
+        input_tokens += (getattr(usage, "input_tokens", 0) or 0) + cache_read + cache_write
         output_tokens += getattr(usage, "output_tokens", 0) or 0
+        log.debug("model call %d: cache read %d, cache write %d tokens", calls, cache_read, cache_write)
 
         if response.stop_reason == "tool_use":
             messages.append({"role": "assistant", "content": response.content})

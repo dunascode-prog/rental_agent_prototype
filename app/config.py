@@ -66,6 +66,7 @@ class Project:
     effort: dict[str, str | None]
     max_tokens: int
     history_turns: int
+    prompt_caching: bool
     parity_tolerance: float
     kb_status_required: str
     staff_email: str
@@ -122,6 +123,7 @@ def load_project_config(project_name: str, projects_root: Path | None = None) ->
         effort=_parse_effort(raw.get("effort")),
         max_tokens=_int(raw, "max_tokens", default=8000, minimum=256),
         history_turns=_int(raw, "history_turns", default=6, minimum=0),
+        prompt_caching=_bool(raw, "prompt_caching", default=True),
         parity_tolerance=_number(raw, "parity_tolerance"),
         kb_status_required=kb_status,
         staff_email=str(raw["staff_email"]).strip().lower(),
@@ -141,6 +143,13 @@ def _int(raw: dict, key: str, default: int | None = None, minimum: int = 0) -> i
     value = raw.get(key, default)
     if isinstance(value, bool) or not isinstance(value, int) or value < minimum:
         raise ConfigError(f"{key} must be an integer >= {minimum}")
+    return value
+
+
+def _bool(raw: dict, key: str, default: bool) -> bool:
+    value = raw.get(key, default)
+    if not isinstance(value, bool):
+        raise ConfigError(f"{key} must be true or false")
     return value
 
 
