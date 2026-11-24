@@ -65,3 +65,4 @@ Claude also keeps `CLAUDE_CHANGELOG.md`, which holds the decision records in det
 - Prompt caching now uses explicit breakpoints only: the system prompt and the newest message.
 - Added a back-office live test; updated README, `.env.example`, `config.yaml` comments and the docs.
 - Decisions: D-19 (switch fully to InvokeModel) decided by the owner.
+- Live check passed (2026-11-24) for both roles. Sonnet 4.6 must be called through its `us.` inference profile. Tests ran from the management account while AWS enables Bedrock for the project account.
