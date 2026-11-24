@@ -28,7 +28,7 @@ Source: [Rental_Agent_Prototype_Architecture.pdf](source/Rental_Agent_Prototype_
 
 - Credentials and keys live in an AWS profile or environment variables, never in project files. The real `.env` file is excluded from version control (PDF section 5).
 - Local: `.env` holds the AWS profile and region and is not committed (Fig. 3, Option A).
-- Hosted: IAM role (task or instance) with `bedrock:InvokeModel` only (Fig. 3, Option B).
+- Hosted: IAM role (task or instance) with `bedrock:InvokeModel` only (Fig. 3, Option B). **Amended (D-01, 2026-11-24):** the implementation calls the Bedrock Mantle endpoint, whose inference action is `bedrock-mantle:CreateInference`; grant that action only, scoped to the allowed model ARNs. The same applies to the local AWS profile.
 - The Bedrock IAM permission is limited to model invocation.
 - The model never receives credentials, and the system prompt contains only approved content for the project (PDF section 3).
 - Model IDs, account numbers and keys are not written into these docs. Use placeholders such as `<bedrock-model-id>` and `<aws-region>`.

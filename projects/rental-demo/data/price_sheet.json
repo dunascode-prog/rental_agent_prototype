@@ -1,0 +1,15 @@
+{
+  "id": "price-sheet",
+  "status": "approved",
+  "currency": "USD",
+  "rules": [
+    "Quote prices only from this sheet.",
+    "Prices are per night before taxes and cleaning fees.",
+    "Exact prices for specific dates are confirmed at booking."
+  ],
+  "plans": {
+    "nightly": {"description": "Standard nightly stay", "from_per_night": {"L-100": 150, "L-200": 95}},
+    "weekly": {"description": "Stays of 7 nights or more", "discount_percent": 10},
+    "monthly": {"description": "Stays of 28 nights or more", "discount_percent": 25}
+  }
+}

@@ -1,11 +1,296 @@
 <!doctype html>
-<!-- Placeholder page; the chat UI will be built here later. -->
+<!-- Browser UI (Fig. 2): chat panel, register form, parity panel, approval cards, change log view. -->
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Rental Agent Prototype</title>
+  <style>
+    :root {
+      --bg: #f6f7f9; --surface: #ffffff; --text: #14181f; --muted: #5b6472; --border: #e3e6eb;
+      --accent: #2f5bea; --accent-text: #ffffff; --ok: #1f8a4c; --warn: #b25e09; --bad: #c2362f;
+      --bubble-user: #2f5bea; --bubble-bot: #eef1f6; --radius: 12px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f1216; --surface: #171b21; --text: #e8ebf0; --muted: #98a2b3; --border: #2a303a;
+        --accent: #6d8dff; --accent-text: #0b0e13; --ok: #4cc48a; --warn: #f0a050; --bad: #ff6b63;
+        --bubble-user: #3d5fd6; --bubble-bot: #222833;
+      }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+             padding: 14px 20px; background: var(--surface); border-bottom: 1px solid var(--border); }
+    h1 { font-size: 18px; margin: 0; }
+    h2 { font-size: 15px; margin: 0 0 12px; }
+    .pill { font-size: 13px; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; }
+    main { max-width: 1200px; margin: 0 auto; padding: 20px 16px; display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+    main.staff { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    @media (max-width: 860px) { main.staff { grid-template-columns: minmax(0, 1fr); } }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; min-width: 0; }
+    .stack { display: grid; gap: 16px; align-content: start; min-width: 0; }
+    button { font: inherit; border: 1px solid var(--border); background: var(--surface); color: var(--text);
+             border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+    button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+    button.danger { color: var(--bad); }
+    button:disabled { opacity: .5; cursor: default; }
+    input, select { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--border);
+                    border-radius: 8px; padding: 7px 10px; min-width: 0; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .row > input { flex: 1; }
+    #messages { height: 420px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 4px; margin-bottom: 12px; }
+    .msg { max-width: 85%; padding: 8px 12px; border-radius: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .msg.user { align-self: flex-end; background: var(--bubble-user); color: #fff; border-bottom-right-radius: 4px; }
+    .msg.bot { align-self: flex-start; background: var(--bubble-bot); border-bottom-left-radius: 4px; }
+    .msg .meta { display: block; font-size: 12px; opacity: .7; margin-top: 4px; }
+    .muted { color: var(--muted); font-size: 13px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+    .table-wrap { overflow-x: auto; }
+    .approval { border: 1px solid var(--border); border-radius: 10px; padding: 12px; display: grid; gap: 8px; }
+    .approval .values { font-size: 20px; font-weight: 600; }
+    .state { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
+    .state.verified, .state.approved, .state.applied { color: var(--ok); }
+    .state.failed, .state.rejected, .state.rejected_at_proposal { color: var(--bad); }
+    .state.awaiting_approval, .state.proposed { color: var(--warn); }
+    dialog { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); width: min(380px, 92vw); }
+    dialog::backdrop { background: rgb(0 0 0 / .4); }
+    dialog form { display: grid; gap: 10px; }
+    .error { color: var(--bad); font-size: 13px; min-height: 1em; }
+    [hidden] { display: none !important; }
+  </style>
 </head>
 <body>
-  <h1>Rental Agent Prototype</h1>
+  <header>
+    <h1 id="project-name">Rental Agent Prototype</h1>
+    <div class="row">
+      <span class="pill" id="status">Loading…</span>
+      <button id="open-register" type="button">Register</button>
+      <button id="open-login" type="button">Log in</button>
+      <button id="logout" type="button" hidden>Log out</button>
+    </div>
+  </header>
+
+  <main id="layout">
+    <section class="card" aria-label="Chat">
+      <h2 id="chat-title">Chat</h2>
+      <div id="messages" aria-live="polite"></div>
+      <form id="chat-form" class="row">
+        <input id="chat-input" autocomplete="off" maxlength="4000" placeholder="Ask a question…" required>
+        <button class="primary" type="submit">Send</button>
+      </form>
+    </section>
+
+    <div class="stack" id="staff-panels" hidden>
+      <section class="card" aria-label="Approval cards">
+        <h2>Approvals</h2>
+        <div id="approvals" class="stack"><p class="muted">No changes waiting for approval.</p></div>
+      </section>
+      <section class="card" aria-label="Parity">
+        <h2>Rate parity</h2>
+        <form id="parity-form" class="row">
+          <select id="parity-listing" aria-label="Listing"></select>
+          <input id="parity-start" type="date" value="2026-12-01" aria-label="Start date" required>
+          <input id="parity-end" type="date" value="2026-12-07" aria-label="End date" required>
+          <button class="primary" type="submit">Run check</button>
+        </form>
+        <p id="parity-summary" class="muted"></p>
+        <div class="table-wrap"><table id="parity-table" hidden>
+          <thead><tr><th>Date</th><th>Channel</th><th>PMS</th><th>Channel rate</th><th></th></tr></thead><tbody></tbody>
+        </table></div>
+      </section>
+      <section class="card" aria-label="Change log">
+        <div class="row" style="justify-content: space-between"><h2>Change log</h2><button id="refresh-log" type="button">Refresh</button></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>When</th><th>Change</th><th>Event</th><th>From → to</th><th>Actor</th></tr></thead><tbody id="log-rows"></tbody>
+        </table></div>
+      </section>
+    </div>
+  </main>
+
+  <dialog id="auth-dialog">
+    <form id="auth-form" method="dialog">
+      <h2 id="auth-title">Register</h2>
+      <input id="auth-email" type="email" placeholder="Email" autocomplete="email" required>
+      <input id="auth-password" type="password" placeholder="Password (8+ characters)" autocomplete="current-password" required>
+      <p class="error" id="auth-error"></p>
+      <div class="row" style="justify-content: flex-end">
+        <button type="button" id="auth-cancel">Cancel</button>
+        <button class="primary" type="submit" id="auth-submit">Register</button>
+      </div>
+    </form>
+  </dialog>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let state = null;
+let authMode = "register";
+
+async function api(path, options = {}) {
+  const response = await fetch(path, {
+    method: options.method || "GET",
+    headers: options.body ? { "Content-Type": "application/json" } : {},
+    body: options.body ? JSON.stringify(options.body) : undefined,
+    credentials: "same-origin",
+  });
+  let data = {};
+  try { data = await response.json(); } catch (_) { /* empty body */ }
+  return { ok: response.ok, status: response.status, data };
+}
+
+function el(tag, props = {}, children = []) {
+  const node = document.createElement(tag);
+  for (const [key, value] of Object.entries(props)) {
+    if (key === "text") node.textContent = value; else if (key === "class") node.className = value; else node.setAttribute(key, value);
+  }
+  for (const child of children) node.append(child);
+  return node;
+}
+
+function addMessage(who, text, meta) {
+  const bubble = el("div", { class: `msg ${who}`, text });
+  if (meta) bubble.append(el("span", { class: "meta", text: meta }));
+  $("messages").append(bubble);
+  $("messages").scrollTop = $("messages").scrollHeight;
+}
+
+function renderState(next) {
+  state = next;
+  const staff = state.role === "back_office";
+  let label = "Visitor";
+  if (staff) label = `Staff · ${state.email}`;
+  else if (state.registered) label = `Registered · ${state.email}`;
+  else label = `Visitor · ${Math.min(state.messages_used, state.free_messages)}/${state.free_messages} free messages`;
+  $("status").textContent = label;
+  $("open-register").hidden = state.registered;
+  $("open-login").hidden = state.registered;
+  $("logout").hidden = !state.registered;
+  $("staff-panels").hidden = !staff;
+  $("layout").classList.toggle("staff", staff);
+  $("chat-title").textContent = staff ? "Back-office assistant" : "Chat";
+  $("chat-input").placeholder = staff ? "Ask about listings, gaps or rate changes…" : "Ask a question…";
+  if (staff) { loadApprovals(); loadLog(); loadListings(); }
+}
+
+async function refreshSession() {
+  const { data } = await api("/api/session");
+  $("project-name").textContent = data.project || "Rental Agent Prototype";
+  renderState(data.state);
+}
+
+$("chat-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const message = $("chat-input").value.trim();
+  if (!message) return;
+  $("chat-input").value = "";
+  addMessage("user", message);
+  const { ok, status, data } = await api("/api/chat", { method: "POST", body: { message } });
+  if (!ok) { addMessage("bot", status === 429 ? "You're sending messages too quickly. Please wait a moment." : "Something went wrong."); return; }
+  addMessage("bot", data.reply, data.state.outcome === "answered" ? "" : data.state.outcome.replace(/_/g, " "));
+  renderState(data.state);
+  if (data.state.outcome === "register") openAuth("register");
+});
+
+function openAuth(mode) {
+  authMode = mode;
+  $("auth-title").textContent = mode === "register" ? "Register" : "Log in";
+  $("auth-submit").textContent = mode === "register" ? "Register" : "Log in";
+  $("auth-error").textContent = "";
+  $("auth-dialog").showModal();
+}
+$("open-register").addEventListener("click", () => openAuth("register"));
+$("open-login").addEventListener("click", () => openAuth("login"));
+$("auth-cancel").addEventListener("click", () => $("auth-dialog").close());
+$("auth-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const body = { email: $("auth-email").value, password: $("auth-password").value };
+  const { ok, data } = await api(authMode === "register" ? "/api/register" : "/api/login", { method: "POST", body });
+  if (!ok) { $("auth-error").textContent = typeof data.detail === "string" ? data.detail : "Please check the form."; return; }
+  $("auth-password").value = "";
+  $("auth-dialog").close();
+  await refreshSession();
+});
+$("logout").addEventListener("click", async () => { await api("/api/logout", { method: "POST" }); await refreshSession(); });
+
+async function loadListings() {
+  if ($("parity-listing").options.length) return;
+  const { ok, data } = await api("/api/listings");
+  if (!ok) return;
+  for (const listing of data.listings) $("parity-listing").append(el("option", { value: listing.listing_id, text: `${listing.listing_id} · ${listing.name}` }));
+}
+
+$("parity-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const body = { listing_id: $("parity-listing").value, start: $("parity-start").value, end: $("parity-end").value };
+  const { ok, data } = await api("/api/parity/run", { method: "POST", body });
+  if (!ok) { $("parity-summary").textContent = data.detail || "Parity check failed."; return; }
+  $("parity-summary").textContent = `Run ${data.run_id}: ${data.compared} compared, ${data.gap_count} gap(s), ${data.no_data_count} with no data. No rate was changed.`;
+  const tbody = $("parity-table").querySelector("tbody");
+  tbody.replaceChildren();
+  for (const gap of data.gaps) {
+    const propose = el("button", { type: "button", text: "Propose PMS fix" });
+    propose.addEventListener("click", () => proposeChange(gap));
+    tbody.append(el("tr", {}, [el("td", { text: gap.date }), el("td", { text: gap.channel }), el("td", { text: gap.pms_rate }),
+      el("td", { text: gap.channel_rate }), el("td", {}, [propose])]));
+  }
+  $("parity-table").hidden = data.gaps.length === 0;
+  loadLog();
+});
+
+async function proposeChange(gap) {
+  const body = { type: "rate_update", target: { listing_id: gap.listing_id, date: gap.date }, before: gap.pms_rate, after: gap.channel_rate };
+  const { ok, data } = await api("/api/changes", { method: "POST", body });
+  if (!ok) alert(data.detail || "Could not propose the change.");
+  loadApprovals(); loadLog();
+}
+
+async function loadApprovals() {
+  const { ok, data } = await api("/api/changes?state=awaiting_approval");
+  if (!ok) return;
+  const box = $("approvals");
+  box.replaceChildren();
+  if (!data.changes.length) { box.append(el("p", { class: "muted", text: "No changes waiting for approval." })); return; }
+  for (const change of data.changes) {
+    const target = `${change.listing_id} · ${change.date} · ${change.channel || "PMS"}`;
+    const name = el("input", { placeholder: "Approver name", "aria-label": "Approver name", maxlength: "100" });
+    const approve = el("button", { class: "primary", type: "button", text: "Approve" });
+    const reject = el("button", { class: "danger", type: "button", text: "Reject" });
+    const message = el("p", { class: "error" });
+    approve.addEventListener("click", async () => {
+      const result = await api(`/api/changes/${change.id}/approve`, { method: "POST", body: { approver_name: name.value, change_hash: change.change_hash } });
+      if (!result.ok) { message.textContent = result.data.detail; return; }
+      loadApprovals(); loadLog();
+    });
+    reject.addEventListener("click", async () => {
+      const result = await api(`/api/changes/${change.id}/reject`, { method: "POST" });
+      if (!result.ok) { message.textContent = result.data.detail; return; }
+      loadApprovals(); loadLog();
+    });
+    box.append(el("div", { class: "approval" }, [
+      el("div", { class: "row", style: "justify-content: space-between" }, [el("strong", { text: `Change #${change.id}` }), el("span", { class: `state ${change.state}`, text: change.state.replace(/_/g, " ") })]),
+      el("div", { class: "muted", text: `Rate update · ${target} · proposed by ${change.created_by}` }),
+      el("div", { class: "values", text: `${change.before} → ${change.after}` }),
+      el("div", { class: "row" }, [name, approve, reject]),
+      message,
+    ]));
+  }
+}
+
+async function loadLog() {
+  const { ok, data } = await api("/api/changelog");
+  if (!ok) return;
+  const tbody = $("log-rows");
+  tbody.replaceChildren();
+  for (const row of data.rows) {
+    const states = row.from_state || row.to_state ? `${row.from_state || "—"} → ${row.to_state || "—"}` : "—";
+    tbody.append(el("tr", {}, [el("td", { text: row.at.replace("T", " ").replace("+00:00", "") }), el("td", { text: row.change_id ?? "—" }),
+      el("td", { text: row.event }), el("td", { text: states }), el("td", { text: row.actor })]));
+  }
+}
+$("refresh-log").addEventListener("click", loadLog);
+
+refreshSession();
+</script>
 </body>
 </html>

@@ -54,7 +54,7 @@ Browser panels in `static/index.html` and the routes they call (Fig. 2):
 Additional labels from Figure 2:
 
 - `agent.py`: agent runtime loop (max 8 model calls); calls `model.py` via `complete(messages, tools)`; dispatches allowed tools to `tools.py`.
-- `model.py`: Bedrock client (Anthropic SDK, Bedrock mode); calls Amazon Bedrock with InvokeModel (AWS SigV4).
+- `model.py`: Bedrock client (Anthropic SDK, Bedrock mode); calls Amazon Bedrock with InvokeModel (AWS SigV4). **Amended (D-01, 2026-11-24):** the implementation uses the SDK's Mantle client (`AnthropicBedrockMantle`, endpoint `bedrock-mantle.{region}.api.aws`), still SigV4-signed; see [DECISIONS.md](DECISIONS.md#adr-06-amazon-bedrock-as-the-model-provider).
 - `tools.py`: tool registry and allowlist; reaches `changes.py` for "propose only"; allowlist from config.
 - `parity.py`: parity engine (plain code, tolerance 0).
 - `config.py`: project loader (`config.yaml`, `kb/`, `data/`); loads and validates `kb/*.md` (approved only) and `data/*.json` (mock PMS).
@@ -72,7 +72,7 @@ Additional labels from Figure 2:
 | Client | Browser on the laptop, `localhost:8000`, HTTP | Reviewer browser, HTTPS |
 | Runtime | `uvicorn app.main:app` (in `.venv`) | Container service (App Runner or one small ECS task), Docker image of the app |
 | Database | `data/app.db` (SQLite file) | SQLite file (needs a persistent volume; without one, data resets on restart) |
-| Credentials | `.env` (AWS profile, region), not committed | IAM role (task or instance), `bedrock:InvokeModel` only |
+| Credentials | `.env` (AWS profile, region), not committed | IAM role (task or instance), `bedrock:InvokeModel` only in the PDF; `bedrock-mantle:CreateInference` only after D-01 |
 | Model | Amazon Bedrock | Amazon Bedrock (same region as config) |
 
 [ASSUMPTION] Local development is the default. A hosted demo is optional and needs a persistent volume or another database. (A-05)

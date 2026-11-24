@@ -1,0 +1,4 @@
+[
+  {"listing_id": "L-100", "name": "Harbour View Loft", "bedrooms": 1, "max_guests": 2, "channels": ["channel_a"]},
+  {"listing_id": "L-200", "name": "Garden Cottage", "bedrooms": 2, "max_guests": 4, "channels": ["channel_a", "channel_b"]}
+]

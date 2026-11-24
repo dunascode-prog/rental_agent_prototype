@@ -12,7 +12,7 @@ Sources: [Rental_Agent_Prototype_Architecture.pdf](source/Rental_Agent_Prototype
 | ENV-04 | Bedrock model access enabled for the Claude models used by each role. Copy the exact model IDs (`<bedrock-model-id>`) and region (`<aws-region>`) from the Bedrock console | §3 |
 | ENV-05 | [ASSUMPTION] Claude models on Bedrock are available in the chosen region and enabled for the account | §11 (A-06) |
 | ENV-06 | AWS credentials via an AWS profile or environment variables; `.env` (AWS profile, region), not committed | §5, Fig. 3 |
-| ENV-07 | IAM permission limited to model invocation (`bedrock:InvokeModel` only) | §5, Fig. 3 |
+| ENV-07 | IAM permission limited to model invocation (`bedrock:InvokeModel` only in the PDF; `bedrock-mantle:CreateInference` only since D-01 moved the client to Mantle) | §5, Fig. 3, D-01 |
 | ENV-08 | Bedrock region the same as config | Fig. 3 Option B (see PA-10) |
 | ENV-09 | Optional hosted demo: container service (App Runner or one small ECS task), Docker image of the app, persistent volume for SQLite | Fig. 3 Option B, §11 (A-05) |
 

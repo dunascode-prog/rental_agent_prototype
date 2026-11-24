@@ -1,0 +1,14 @@
+[
+  {"channel": "channel_a", "listing_id": "L-100", "date": "2026-12-01", "rate": 150},
+  {"channel": "channel_a", "listing_id": "L-100", "date": "2026-12-02", "rate": 150},
+  {"channel": "channel_a", "listing_id": "L-100", "date": "2026-12-03", "rate": 150},
+  {"channel": "channel_a", "listing_id": "L-100", "date": "2026-12-04", "rate": 165},
+  {"channel": "channel_a", "listing_id": "L-100", "date": "2026-12-05", "rate": 175},
+  {"channel": "channel_a", "listing_id": "L-100", "date": "2026-12-06", "rate": 180},
+  {"channel": "channel_a", "listing_id": "L-200", "date": "2026-12-01", "rate": 95},
+  {"channel": "channel_a", "listing_id": "L-200", "date": "2026-12-02", "rate": 95},
+  {"channel": "channel_a", "listing_id": "L-200", "date": "2026-12-03", "rate": 95},
+  {"channel": "channel_b", "listing_id": "L-200", "date": "2026-12-01", "rate": 95},
+  {"channel": "channel_b", "listing_id": "L-200", "date": "2026-12-02", "rate": 99},
+  {"channel": "channel_b", "listing_id": "L-200", "date": "2026-12-03", "rate": 95}
+]
