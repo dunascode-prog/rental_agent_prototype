@@ -1,29 +1,54 @@
-# Project configuration for the rental-demo assistant. Placeholder values only.
+# Project configuration for the rental-demo assistant.
+# Never put credentials, account numbers or real model IDs in this file's history:
+# copy model IDs and the region from the Bedrock console into your local copy only.
 
 # Display name of the business / assistant.
-name: "TODO: business name"
+name: "Rental Demo"
 
-# Persona and tone the assistant uses with visitors.
-persona: "TODO: persona description"
+# Persona and tone the assistant uses with website visitors.
+persona: >
+  You are the friendly website assistant for Rental Demo, a small short-term rental business.
+  You are concise, warm and factual.
 
-# Number of free visitor messages before the limit applies.
+# Number of free visitor messages before the registration prompt (PDF section 1).
 free_messages: 5
 
-# Tools the agent is allowed to use.
+# Tool allowlist per role (PDF sections 3 and 8). Remove a tool to disable it.
 enabled_tools:
-  - "TODO: tool_name"
+  visitor_chat: [search_kb, get_price_sheet, handoff_to_sales]
+  back_office:
+    [get_listing, get_reservation, run_parity_check, list_gaps,
+     propose_change, get_change_status, handoff_to_human]
 
-# Bedrock model ID for the visitor-facing chat.
-model_chat: "TODO: bedrock model id"
+# Bedrock model IDs. Visitor chat uses a Claude Haiku model, back-office a Claude Sonnet model.
+# Mantle model IDs carry the anthropic. prefix (anthropic.<model-name>); copy them from the Bedrock console.
+model_chat: "<bedrock-model-id>"
+model_backoffice: "<bedrock-model-id>"
 
-# Bedrock model ID for back-office tasks (e.g. rate proposals).
-model_backoffice: "TODO: bedrock model id"
+# AWS region for Bedrock calls. If left as a placeholder, AWS_REGION from .env is used.
+aws_region: "<aws-region>"
 
-# AWS region for Bedrock calls.
-aws_region: "TODO: aws region"
+# Max output tokens per model call (Fig. 5 stage 4).
+max_tokens: 8000
 
-# Allowed rate difference across channels before flagging a parity issue.
+# Number of previous turns of this session sent to the model (Fig. 5 stage 3).
+history_turns: 6
+
+# Optional effort per role (low, medium, high). Leave unset if your model does not support it.
+# effort:
+#   visitor_chat: low
+#   back_office: medium
+
+# Allowed rate difference between PMS and channel before a gap is recorded (Fig. 7).
 parity_tolerance: 0
 
 # Only knowledge-base entries with this status are used to answer.
 kb_status_required: "approved"
+
+# The single staff login for this project. The password comes from STAFF_PASSWORD in .env.
+staff_email: "staff@example.com"
+
+# Defaults not given in the PDF (docs/ASSUMPTIONS.md A-04, PA-08).
+password_min_length: 8
+retrieval_min_score: 1
+chat_rate_limit_per_minute: 20

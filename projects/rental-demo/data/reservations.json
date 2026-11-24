@@ -1,0 +1,4 @@
+[
+  {"reservation_id": "R-5001", "listing_id": "L-100", "guest_name": "Sample Guest A", "check_in": "2026-12-02", "check_out": "2026-12-05", "total": 465, "card_number": "4111111111111111"},
+  {"reservation_id": "R-5002", "listing_id": "L-200", "guest_name": "Sample Guest B", "check_in": "2026-12-01", "check_out": "2026-12-03", "total": 190, "card_number": "5555555555554444"}
+]

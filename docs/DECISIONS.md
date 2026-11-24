@@ -42,6 +42,7 @@ ADR IDs are defined in this document.
 - Context: model provider for both roles.
 - Decision: Amazon Bedrock (Claude), called by `model.py` through the Anthropic SDK in Bedrock mode with AWS credentials; InvokeModel (AWS SigV4) (§2, §6, Fig. 2). Visitor chat uses Claude Haiku; back-office uses Claude Sonnet; model IDs are set in `config.yaml` and copied from the Bedrock console (§3).
 - Consequences: no Anthropic API key; AWS credentials are used only by the Bedrock client (Fig. 10); IAM limited to model invocation (§5). Depends on model availability in the chosen region (A-06). Model choice may change after testing (A-01).
+- Amendment (2026-11-24, approved by the project owner as D-01 in `CLAUDE_CHANGELOG.md`): `model.py` uses the SDK's Mantle client, `AnthropicBedrockMantle`, which calls the Anthropic Messages API on Bedrock at `https://bedrock-mantle.{region}.api.aws/anthropic/v1/messages`, signed with AWS SigV4. Model IDs carry the `anthropic.` prefix (for example `anthropic.<model-name>`). The IAM action for Mantle inference is `bedrock-mantle:CreateInference`, so the "limited to model invocation" rule is met by granting that action only, scoped to the allowed model ARNs, instead of `bedrock:InvokeModel`. Sources: Anthropic "Claude in Amazon Bedrock" guide and AWS "Bedrock Mantle" user guide page.
 
 ## ADR-07: Guardrails enforced in code
 
