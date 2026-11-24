@@ -39,3 +39,7 @@ Claude also keeps `CLAUDE_CHANGELOG.md`, which holds the decision records in det
 - Added this append-only `CHANGELOG.md`, backfilled with every change so far.
 - Added `scripts/check_changelog.py` and the `changelog` GitHub Actions workflow. The check fails when an existing line of `CHANGELOG.md` is edited or deleted, or when other files change without a new entry appended.
 - Decisions (owner, 2026-11-24): one entry appended per PR, enforced by CI; `CHANGELOG.md` at the repo root; `CLAUDE_CHANGELOG.md` kept and updated alongside it.
+
+## 2026-11-24 · PR #5 · Claude
+- Added the `tests` GitHub Actions workflow: installs `requirements.txt` on Python 3.12 and runs `python -m pytest -q` on every pull request and push to `main`. The live Bedrock test stays skipped in CI (no AWS credentials).
+- Decisions: CI workflow chosen by the owner (2026-11-24).

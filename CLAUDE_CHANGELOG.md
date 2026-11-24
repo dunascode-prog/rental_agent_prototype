@@ -34,6 +34,13 @@ These were made during the first implementation pass (2026-11-24), before the "a
 
 ---
 
+## 2026-11-24 — CI test workflow (PR #5, `claude/ci-tests`)
+
+- Owner chose a CI test workflow (2026-11-24).
+- Added `.github/workflows/tests.yml`: Python 3.12, pip cache keyed on `requirements.txt`, `python -m pytest -q`, on every pull request and push to `main`, read-only permissions. The live Bedrock test is skipped in CI.
+- README "Test" section mentions the CI checks.
+- Stacked on PR #4.
+
 ## 2026-11-24 — Append-only CHANGELOG.md with a CI check (PR #4, `claude/changelog`)
 
 - Owner decisions (asked 2026-11-24): entries appended in each PR and enforced by CI; file `CHANGELOG.md` at the repo root; keep this file updated as well.
