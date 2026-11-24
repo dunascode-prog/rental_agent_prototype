@@ -18,6 +18,7 @@ Change history and decisions: [CLAUDE_CHANGELOG.md](../CLAUDE_CHANGELOG.md).
 - [REQUIREMENTS.md](REQUIREMENTS.md): environment, dependencies, non-functional requirements.
 - [DECISIONS.md](DECISIONS.md): architecture decision records ADR-01 to ADR-07.
 - [ASSUMPTIONS.md](ASSUMPTIONS.md): assumptions register, scaffold reconciliation, PDF ambiguities.
+- [DEPLOYMENT.md](DEPLOYMENT.md): hosted demo on AWS (Option B): Docker image, ECS Fargate + EFS, load balancer, CloudFront.
 
 ## Suggested reading order
 
@@ -32,3 +33,4 @@ Change history and decisions: [CLAUDE_CHANGELOG.md](../CLAUDE_CHANGELOG.md).
 9. [REQUIREMENTS.md](REQUIREMENTS.md): what you need to run it.
 10. [DECISIONS.md](DECISIONS.md): why it is designed this way.
 11. [ASSUMPTIONS.md](ASSUMPTIONS.md): what is still open.
+12. [DEPLOYMENT.md](DEPLOYMENT.md): only when a hosted demo is needed.

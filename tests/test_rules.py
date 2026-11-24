@@ -90,3 +90,18 @@ def test_bad_chat_input_is_400(client):
 
 def test_unknown_listing_is_404(staff_client):
     assert staff_client.get("/api/parity", params={"listing_id": "nope"}).status_code == 404
+
+
+def test_session_cookie_secure_flag_follows_env(monkeypatch, tmp_path):
+    from fastapi.testclient import TestClient
+
+    from app.main import create_app
+    from tests.conftest import FakeModel
+
+    for value, expected in (("1", True), ("", False)):
+        monkeypatch.setenv("SESSION_COOKIE_SECURE", value)
+        app = create_app(project_name="rental-demo", database_path=str(tmp_path / f"c{value}.db"), model=FakeModel())
+        with TestClient(app) as client:
+            cookie = client.get("/api/session").headers["set-cookie"].lower()
+        assert ("secure" in cookie) is expected
+        assert "httponly" in cookie

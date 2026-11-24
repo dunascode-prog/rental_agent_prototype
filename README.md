@@ -44,6 +44,18 @@ uvicorn app.main:app --env-file .env
 
 Open http://localhost:8000. Visitors get 5 free messages, then a registration prompt. Log in with the staff email and `STAFF_PASSWORD` to see the approval cards, the parity panel and the change log.
 
+With Docker:
+
+```bash
+docker build -t rental-agent-prototype .
+docker run -p 8000:8000 --env-file .env -v rental-agent-data:/data \
+  -v ~/.aws:/home/appuser/.aws:ro rental-agent-prototype
+```
+
+The `~/.aws` mount (read-only) lets the container use the `AWS_PROFILE` from `.env`; leave it out if you don't need live model answers.
+
+For a hosted demo on AWS (ECS Fargate + EFS behind CloudFront), follow [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+
 ## Test
 
 ```bash

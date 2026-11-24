@@ -33,8 +33,22 @@ These were made during the first implementation pass (2026-11-24), before the "a
 | D-13 | Defaults: password at least 8 characters; KB search needs at least 1 matching word; `max_tokens` 8000. | Other values. | The PDF says these are defaults but gives no values (A-04). |
 | D-14 | Prompt caching uses the default 5-minute cache and is on by default (`prompt_caching: true`). Proposed in PR #6. | 1-hour cache (costs 2x on writes), or off by default. | Chat turns in one visit usually come within minutes; a 1-hour cache only pays off for long pauses. |
 | D-15 | `traces.input_tokens` counts uncached + cache-written + cache-read tokens. Proposed in PR #6. | Count uncached tokens only, or add cache columns to `traces` (a Fig. 4 schema change). | Keeps the Fig. 4 schema and keeps the column meaning "all input processed". |
+| D-16 | The hosted demo runs exactly one task: desired count 1, deployment minimum 0% and maximum 100%. Proposed in PR #7. | Two or more tasks, or rolling deploys with overlap. | SQLite on EFS is only safe with one writer; the cost is a short downtime on each deploy. |
+| D-17 | CloudFront adds a secret `X-Origin-Verify` header and the load balancer forwards only requests carrying it (403 otherwise). Proposed in PR #7. | Rely on the CloudFront IP prefix list alone. | The prefix list admits any CloudFront distribution; the header ties access to this one. |
+| D-18 | The session cookie's `Secure` flag comes from `SESSION_COOKIE_SECURE` (off by default). Proposed in PR #7. | Detect HTTPS from forwarded headers. | Behind CloudFront → HTTP load balancer the app can't see the original scheme reliably; an explicit switch is simpler. |
 
 ---
+
+## 2026-11-24 — Docker image and hosted demo guide (PR #7, `claude/docker`)
+
+- Owner decisions (asked 2026-11-24): ECS Fargate + EFS; Dockerfile plus a step-by-step guide, no infrastructure as code; no domain yet, so CloudFront's default HTTPS URL; a public load balancer that only CloudFront can reach (not VPC origins + NAT). The live Bedrock check is postponed until AWS is ready.
+- `Dockerfile`: `python:3.12-slim`, installs `requirements.txt`, copies `app/` and `projects/`, runs as uid 1000, `DATABASE_PATH=/data/app.db`, health check on `/health`, `uvicorn` on port 8000.
+- `.dockerignore`: excludes `.git`, `.github`, `.venv`, caches, `*.db`, `.env`, `docs`, `tests`, `scripts`.
+- `.github/workflows/docker.yml`: builds the image, runs it, checks `/health` and that `/data/app.db` was created by uid 1000. Docker isn't installed on the dev machine, so CI is where the image is tested.
+- `app/main.py`: the session cookie is `Secure` when `SESSION_COOKIE_SECURE` is set (D-18); test in `tests/test_rules.py`.
+- `docs/DEPLOYMENT.md`: ECR, Secrets Manager, security groups (CloudFront origin-facing prefix list), EFS access point (uid/gid 1000, root `/rental-agent`, 755), IAM (execution role + `secretsmanager:GetSecretValue`; task role `bedrock-mantle:CreateInference` only), task definition JSON, load balancer with the secret-header rule (D-17), single-task service (D-16), CloudFront settings (CachingDisabled, AllViewer, all methods, redirect to HTTPS), checks and teardown. Facts were checked against AWS docs. Not verified: the model ARN format, and whether the steps work end to end.
+- README: Docker commands and a link to the guide. `docs/INDEX.md`: lists the guide. `.env.example`: `SESSION_COOKIE_SECURE`.
+- Stacked on PR #6.
 
 ## 2026-11-24 — Prompt caching (PR #6, `claude/prompt-caching`)
 
