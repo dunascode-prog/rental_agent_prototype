@@ -52,6 +52,9 @@ python -m pytest -q
 
 The model is replaced by a scripted fake, so tests need no AWS access. The optional live test runs against Bedrock when `RUN_LIVE_BEDROCK=1` and AWS credentials and model IDs are configured.
 
+GitHub Actions runs two checks on every pull request and push to `main`: `tests` (the suite above) and `changelog` (see below).
+
 ## Change log
 
-Every change made by Claude is recorded in [CLAUDE_CHANGELOG.md](CLAUDE_CHANGELOG.md), including decisions awaiting review.
+- [CHANGELOG.md](CHANGELOG.md): append-only record of every change to the repository. Every pull request appends an entry at the end; the `changelog` check fails if an existing line is edited or an entry is missing.
+- [CLAUDE_CHANGELOG.md](CLAUDE_CHANGELOG.md): Claude's detailed change notes and decision records.

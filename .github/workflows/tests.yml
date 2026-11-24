@@ -1,0 +1,26 @@
+# Runs the test suite (AC-1 to AC-7, rule tests, changelog check tests) on every PR and push to main.
+# The live Bedrock test stays skipped: CI has no AWS credentials.
+name: tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+      - name: Install requirements
+        run: python -m pip install -r requirements.txt
+      - name: Run tests
+        run: python -m pytest -q
