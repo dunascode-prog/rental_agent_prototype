@@ -33,13 +33,21 @@ These were made during the first implementation pass (2026-11-24), before the "a
 
 ---
 
+## 2026-11-24 — Docs synced with the implementation (PR: `claude/docs-sync`)
+
+- PR #1 and PR #2 were merged by the owner with no review comments. D-02 to D-13 shipped as written; they stay listed above so any of them can still be revisited.
+- `docs/ACCEPTANCE_TESTS.md`: "Current status" now describes the implemented tests instead of skipped placeholders.
+- `docs/API.md`: added the implemented request bodies and the D-02 routes.
+- `docs/ASSUMPTIONS.md`: added a "Resolution status" table for every SR, PA and A item touched by the implementation. Still open: SR-13 (Dockerfile) and A-13 (`APP_SECRET_KEY`).
+- `docs/INDEX.md`: links to this log.
+
 ## 2026-11-24 — Repository and PR workflow
 
 - The owner connected `origin` (github.com/dunascode-prog/rental_agent_prototype) and pushed the scaffold and docs commits to `main` directly, so they have no PRs.
-- PR #1 (`claude/gitattributes`): `.gitattributes` marks `*.pdf`, `*.png`, `*.jpg`, `*.db` as binary so `core.autocrlf` can't corrupt the architecture PDF on checkout.
+- PR #1 (`claude/gitattributes`, merged): `.gitattributes` marks `*.pdf`, `*.png`, `*.jpg`, `*.db` as binary so `core.autocrlf` can't corrupt the architecture PDF on checkout.
 - Added this file and recorded the repository rules above.
 
-## 2026-11-24 — First implementation pass (PR: `claude/implementation`)
+## 2026-11-24 — First implementation pass (PR #2, merged)
 
 Status: code complete for the prototype scope; 20 tests pass, 1 live test skipped.
 

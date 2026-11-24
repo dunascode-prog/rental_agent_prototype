@@ -97,6 +97,33 @@ Request and response body shapes are not specified in the PDF. [ASSUMPTION: fiel
 - Success: 200 log rows (`change_log`: id, change_id, event, from_state, to_state, actor, payload_hash, at).
 - Errors: none.
 
+## Implemented request bodies (resolves A-07)
+
+| Endpoint | Body |
+|----------|------|
+| `POST /api/chat` | `{"message": string (1-4000)}` → `{"reply", "state": {role, registered, email, messages_used, free_messages, limited, model_called, pending_changes, outcome}}`; `outcome` is `answered`, `handoff`, `fallback`, `refuse` or `register` |
+| `POST /api/register`, `POST /api/login` | `{"email", "password"}` |
+| `GET /api/parity` | query `listing_id` (A-16) |
+| `POST /api/parity/run` | `{"listing_id", "start": "YYYY-MM-DD", "end": "YYYY-MM-DD"}` |
+| `POST /api/changes` | `{"type": "rate_update", "target": {"listing_id", "date", "channel"?}, "before", "after"}`; omit `channel` to change the PMS rate (A-10) |
+| `POST /api/changes/{id}/approve` | `{"approver_name", "change_hash"?}`; when `change_hash` is sent it must match the recomputed hash |
+
+Unknown fields are rejected with 400. Responses with a change include the full `changes` row and its `approval`. The approve endpoint returns the final state, `verified` or `failed` (PA-09).
+
+## Additional routes (decision D-02)
+
+Not in the PDF; added so staff can log in and the UI can rebuild its panels after a reload.
+
+| Method | Path | Purpose | Auth | Success | Main errors |
+|--------|------|---------|------|---------|-------------|
+| POST | `/api/login` | Log in (staff or registered visitor) | none | 200 state | 401 wrong email or password |
+| POST | `/api/logout` | Unlink the user from the session | session cookie | 200 | none |
+| GET | `/api/session` | Project name and session state | session cookie | 200 state | none |
+| GET | `/api/listings` | Listings for the parity panel | session (staff) | 200 listings | 401, 403 |
+| GET | `/api/changes` | Changes, optionally `?state=awaiting_approval` | session (staff) | 200 changes | 401, 403 |
+
+Staff routes return 401 without a logged-in user and 403 for a non-staff user. `POST /api/chat` returns 429 after `chat_rate_limit_per_minute` requests per session per minute (D-12).
+
 ## Related documents
 
 - Functional requirements and error table: [FRD.md](FRD.md)
