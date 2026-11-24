@@ -43,3 +43,8 @@ Claude also keeps `CLAUDE_CHANGELOG.md`, which holds the decision records in det
 ## 2026-11-24 · PR #5 · Claude
 - Added the `tests` GitHub Actions workflow: installs `requirements.txt` on Python 3.12 and runs `python -m pytest -q` on every pull request and push to `main`. The live Bedrock test stays skipped in CI (no AWS credentials).
 - Decisions: CI workflow chosen by the owner (2026-11-24).
+
+## 2026-11-24 · PR #6 · Claude
+- Added prompt caching for Bedrock calls: an explicit cache breakpoint at the end of the static system prompt (persona, rules, approved KB) plus top-level automatic caching for the conversation tail. Controlled by `prompt_caching` in `config.yaml` (default `true`).
+- `traces.input_tokens` now includes tokens written to and read from the cache, so it still shows all input processed.
+- Decisions: prompt caching chosen by the owner (2026-11-24); D-14 (5-minute cache, on by default) and D-15 (token counting in traces) proposed for review.

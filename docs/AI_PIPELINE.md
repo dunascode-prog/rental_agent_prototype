@@ -38,6 +38,8 @@ Entry: visitor sends a message (`POST /api/chat` with session cookie).
 | 6 | Stage 6: output check | Reply cites `[kb:ID]` of an approved entry? | No: replace with hand-off offer; row written to `handoffs` | — |
 | 7 | Stage 7: save and trace | `message_count + 1`; `traces` row written | — | — |
 
+Stage 4 uses prompt caching when `prompt_caching: true` in `config.yaml` (D-14 in `CLAUDE_CHANGELOG.md`). The system prompt, which includes the approved KB, is cached with an explicit breakpoint, and the growing conversation is cached automatically. Later calls in the same turn, and turns within about 5 minutes, read the prefix from the cache.
+
 Stages 4 and 5 repeat while the model requests tools. When the model returns final text (no tool request), the flow goes to stage 6. All paths end at "Reply to visitor".
 
 Open points: N in "last N turns" (A-08), max tokens key (A-09, SR-01), how price-sheet answers satisfy stage 6 (A-17).
