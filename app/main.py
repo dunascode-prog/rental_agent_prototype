@@ -106,6 +106,8 @@ def create_app(
         app.state.model = model or BedrockModel(region=region, profile=os.getenv("AWS_PROFILE") or None)
         app.state.limiter = RateLimiter(project.chat_rate_limit_per_minute)
         app.state.transcripts = agent.TranscriptStore(project.history_turns)
+        # Behind CloudFront the app sees plain HTTP, so HTTPS deployments turn this on explicitly.
+        app.state.cookie_secure = os.getenv("SESSION_COOKIE_SECURE", "").strip().lower() in ("1", "true", "yes")
         password = staff_password if staff_password is not None else os.getenv("STAFF_PASSWORD")
         if password:
             conn = connect(db_path)
@@ -165,7 +167,14 @@ def get_session(request: Request, response: Response, conn: sqlite3.Connection =
                 (token, project.slug, now()),
             )
         row = conn.execute("SELECT * FROM sessions WHERE id = ?", (token,)).fetchone()
-        response.set_cookie(COOKIE_NAME, token, httponly=True, samesite="lax", max_age=60 * 60 * 24 * 30)
+        response.set_cookie(
+            COOKIE_NAME,
+            token,
+            httponly=True,
+            samesite="lax",
+            secure=request.app.state.cookie_secure,
+            max_age=60 * 60 * 24 * 30,
+        )
     return row
 
 

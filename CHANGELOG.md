@@ -48,3 +48,10 @@ Claude also keeps `CLAUDE_CHANGELOG.md`, which holds the decision records in det
 - Added prompt caching for Bedrock calls: an explicit cache breakpoint at the end of the static system prompt (persona, rules, approved KB) plus top-level automatic caching for the conversation tail. Controlled by `prompt_caching` in `config.yaml` (default `true`).
 - `traces.input_tokens` now includes tokens written to and read from the cache, so it still shows all input processed.
 - Decisions: prompt caching chosen by the owner (2026-11-24); D-14 (5-minute cache, on by default) and D-15 (token counting in traces) proposed for review.
+
+## 2026-11-24 · PR #7 · Claude
+- Added a `Dockerfile` (Python 3.12 slim, non-root uid 1000, SQLite at `/data/app.db`, health check) and `.dockerignore` (keeps `.env`, `*.db`, `.git`, docs and tests out of the image).
+- Added the `docker` GitHub Actions workflow: builds the image, starts it and checks `/health` and that `/data/app.db` is created.
+- Added `docs/DEPLOYMENT.md`: step-by-step hosted demo on ECS Fargate + EFS behind a public load balancer that only CloudFront can reach, using CloudFront's default HTTPS address.
+- `SESSION_COOKIE_SECURE=1` marks the session cookie Secure for HTTPS deployments (new in `.env.example`); test added.
+- Decisions: owner chose ECS Fargate + EFS, Dockerfile plus a guide (no infrastructure as code), CloudFront's default HTTPS URL (no domain yet), and a public load balancer limited to CloudFront; D-16 (exactly one task) and D-17 (secret origin header) proposed for review.

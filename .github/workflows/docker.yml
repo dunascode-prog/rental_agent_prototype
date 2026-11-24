@@ -1,0 +1,30 @@
+# Builds the container image and checks that it starts and answers /health.
+name: docker
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t rental-agent-prototype:ci .
+      - name: Start the container and check /health
+        run: |
+          docker run -d --name app -p 8000:8000 -e STAFF_PASSWORD=ci-only-password rental-agent-prototype:ci
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8000/health; then
+              docker exec app test -f /data/app.db && echo " /data/app.db created as uid $(docker exec app id -u)"
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs app
+          exit 1
