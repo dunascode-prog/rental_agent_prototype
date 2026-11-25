@@ -80,7 +80,7 @@ Preconditions and steps below are derived from the PDF's pipelines and data flow
 
 ## Current status
 
-All seven are implemented and pass (PR #2). The scripted fake model is `FakeModel` in `tests/conftest.py`. `tests/test_rules.py` covers the supporting rules: step limit, allowlist and schema errors, draft citations, stale proposals, rejection, hash mismatch, payment masking, auth and error codes. The optional live test is `tests/test_live_bedrock.py`, which runs only when `RUN_LIVE_BEDROCK=1` (resolves A-15 and SR-07).
+All seven are implemented and pass (PR #2). The scripted fake model is `FakeModel` in `tests/conftest.py`. `tests/test_rules.py` covers the supporting rules: step limit, allowlist and schema errors, draft citations, stale proposals, rejection, hash mismatch, payment masking, auth and error codes. The optional live tests are in `tests/test_live_bedrock.py` and run only when `RUN_LIVE_BEDROCK=1` (resolves A-15 and SR-07): one visitor turn (cited answer or hand-off) and one back-office turn (parity check through tools). Both passed against Bedrock on 2026-11-24 (PR #9).
 
 Implementation notes for the tests:
 

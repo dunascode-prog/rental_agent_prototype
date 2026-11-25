@@ -10,13 +10,13 @@ Sources: [Rental_Agent_Prototype_Architecture.pdf](source/Rental_Agent_Prototype
 | ENV-02 | Virtual environment in `.venv`; app started as `uvicorn app.main:app`, browsed at `localhost:8000` | Fig. 3 Option A |
 | ENV-03 | An AWS account with Amazon Bedrock access | §2, §3 |
 | ENV-04 | Bedrock model access enabled for the Claude models used by each role. Copy the exact model IDs (`<bedrock-model-id>`) and region (`<aws-region>`) from the Bedrock console | §3 |
-| ENV-05 | [ASSUMPTION] Claude models on Bedrock are available in the chosen region and enabled for the account | §11 (A-06) |
+| ENV-05 | [ASSUMPTION] Claude models on Bedrock are available in the chosen region and enabled for the account. Confirmed in us-east-1 on 2026-11-24 (A-06) | §11 (A-06) |
 | ENV-06 | AWS credentials via an AWS profile or environment variables; `.env` (AWS profile, region), not committed | §5, Fig. 3 |
 | ENV-07 | IAM permission limited to model invocation (`bedrock:InvokeModel` only, as in the PDF; D-01 briefly used `bedrock-mantle:CreateInference`, reverted by D-19) | §5, Fig. 3, D-01 |
 | ENV-08 | Bedrock region the same as config | Fig. 3 Option B (see PA-10) |
 | ENV-09 | Optional hosted demo: container service (App Runner or one small ECS task), Docker image of the app, persistent volume for SQLite | Fig. 3 Option B, §11 (A-05) |
 
-Environment variables (from `.env.example`): `AWS_PROFILE`, `AWS_REGION`, `APP_SECRET_KEY`, `DATABASE_PATH`. Values are never committed.
+Environment variables (from `.env.example`): `AWS_PROFILE`, `AWS_REGION`, `BEDROCK_MODEL_CHAT`, `BEDROCK_MODEL_BACKOFFICE`, `APP_SECRET_KEY`, `DATABASE_PATH`, `PROJECT_NAME`, `STAFF_PASSWORD`, `SESSION_COOKIE_SECURE`, `RUN_LIVE_BEDROCK`. Values are never committed.
 
 ## 2. Dependencies
 

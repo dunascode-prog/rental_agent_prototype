@@ -40,6 +40,10 @@ These were made during the first implementation pass (2026-11-24), before the "a
 
 ---
 
+## 2026-11-24 — Docs: live check status (PR #10, `claude/docs-live-status`)
+
+- Documentation only. `docs/ASSUMPTIONS.md`: A-01 resolved (Haiku 4.5 / Sonnet 4.6 tested), A-06 resolved for us-east-1 with the caveat that the project account is still blocked by AWS, SR-13 resolved (Dockerfile exists, not deployed). `docs/ACCEPTANCE_TESTS.md`: both live tests described and marked passed. `docs/REQUIREMENTS.md`: ENV-05 confirmed; environment variable list brought up to date with `.env.example`.
+
 ## 2026-11-24 — Bedrock client back to InvokeModel (PR #9, `claude/bedrock-invokemodel`)
 
 - Live check (2026-11-24, account set up by the owner, SSO profile with the `RentalAgentDev` permission set, `us-east-1`): sign-in and SigV4 worked, but Mantle returned `404 does not exist` for the console model IDs and `403 not available for this account` for `anthropic.claude-haiku-4-5`, `anthropic.claude-sonnet-5` and `anthropic.claude-opus-5-5`. The owner chose to switch fully to InvokeModel (D-19).
