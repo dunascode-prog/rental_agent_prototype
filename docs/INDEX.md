@@ -18,7 +18,7 @@ Change history and decisions: [CLAUDE_CHANGELOG.md](../CLAUDE_CHANGELOG.md).
 - [REQUIREMENTS.md](REQUIREMENTS.md): environment, dependencies, non-functional requirements.
 - [DECISIONS.md](DECISIONS.md): architecture decision records ADR-01 to ADR-07.
 - [ASSUMPTIONS.md](ASSUMPTIONS.md): assumptions register, scaffold reconciliation, PDF ambiguities.
-- [DEPLOYMENT.md](DEPLOYMENT.md): hosted demo on AWS (Option B): Docker image, ECS Fargate + EFS, load balancer, CloudFront.
+- [DEPLOYMENT.md](DEPLOYMENT.md): hosted demo on AWS (Option B): Docker image on one EC2 server behind CloudFront (current, D-20), with ECS Fargate + EFS as the documented alternative.
 
 ## Suggested reading order
 

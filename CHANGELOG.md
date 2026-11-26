@@ -69,3 +69,7 @@ Claude also keeps `CLAUDE_CHANGELOG.md`, which holds the decision records in det
 
 ## 2026-11-24 · PR #10 · Claude
 - Documentation only: recorded the live Bedrock results in `docs/ASSUMPTIONS.md` (A-01 and A-06 resolved, SR-13 resolved), `docs/ACCEPTANCE_TESTS.md` (both live tests passed) and `docs/REQUIREMENTS.md` (ENV-05 confirmed; full list of environment variables).
+
+## 2026-11-26 · PR #11 · Claude
+- Hosted demo moved to one EC2 t3.micro behind CloudFront (decision D-20 by the owner, to cut cost from about $45-50 to about $12 a month). Added `deploy/ec2-userdata.sh` and an EC2 section in `docs/DEPLOYMENT.md`; the ECS Fargate plan is kept as the alternative. Updated `docs/INDEX.md` and `docs/ASSUMPTIONS.md` (SR-13); `.gitattributes` keeps shell scripts LF.
+- Deployed and checked on 2026-11-26: health, HTTPS redirect, direct access blocked, a cited visitor answer, staff login and a back-office parity check. The Fargate resources created earlier the same day were removed.
