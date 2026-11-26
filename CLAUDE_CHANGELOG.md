@@ -37,8 +37,28 @@ These were made during the first implementation pass (2026-11-24), before the "a
 | D-17 | CloudFront adds a secret `X-Origin-Verify` header and the load balancer forwards only requests carrying it (403 otherwise). Proposed in PR #7. | Rely on the CloudFront IP prefix list alone. | The prefix list admits any CloudFront distribution; the header ties access to this one. |
 | D-18 | The session cookie's `Secure` flag comes from `SESSION_COOKIE_SECURE` (off by default). Proposed in PR #7. | Detect HTTPS from forwarded headers. | Behind CloudFront → HTTP load balancer the app can't see the original scheme reliably; an explicit switch is simpler. |
 | D-19 | **Decided by the owner (2026-11-24): switch fully from Mantle to InvokeModel (`AnthropicBedrock`), replacing D-01.** IAM is `bedrock:InvokeModel` + `bedrock:InvokeModelWithResponseStream` on the two models. Model IDs can come from `BEDROCK_MODEL_CHAT` / `BEDROCK_MODEL_BACKOFFICE` in `.env`. Caching uses explicit breakpoints only (system prompt + newest message). Proposed in PR #9. | Stay on Mantle and ask AWS to enable Claude for the account; or keep both behind a config switch. | The new account gets `403 not available for this account` for every Claude model on Mantle; the console-enabled models (Haiku 4.5, Sonnet 4.6) only work through InvokeModel. |
+| D-20 | **Decided by the owner (2026-11-26): host the demo on one EC2 t3.micro server behind CloudFront instead of ECS Fargate + EFS + load balancer.** Docker runs the pinned image as a systemd service; SQLite on the server's encrypted disk; instance role limited to the two Bedrock models, ECR pull, the staff secret and SSM; inbound only from CloudFront's prefix list; no SSH. D-16 and D-17 now apply to the Fargate alternative only. Proposed in PR #11. | Fargate as planned (about $45-50 a month); Fargate only on review days; Lightsail container (needs long-lived access keys). | Owner asked for a cheaper option: about $12 a month, about $4 while stopped. Keeps no keys in the container and data that survives restarts. Loses D-17's header check (any CloudFront distribution can reach the server if it knows the address) and automatic replacement. |
 
 ---
+
+## 2026-11-26 — Hosted demo on one EC2 server (PR #11, `claude/ec2-hosted-demo`)
+
+- Decision D-20 (owner): cheaper hosting. The demo runs on one EC2 t3.micro behind CloudFront instead of ECS Fargate + EFS + load balancer.
+- Added `deploy/ec2-userdata.sh`, the server start-up script: it installs Docker and runs the pinned image as a systemd service. The staff password is read from Secrets Manager into memory at each start. The account ID is a placeholder.
+- `docs/DEPLOYMENT.md`: new "EC2 host (current, D-20)" section with every step, the checks and teardown; the Fargate plan is kept as the alternative. `docs/INDEX.md` and `docs/ASSUMPTIONS.md` (SR-13 deployed) updated. `.gitattributes`: `*.sh` always checked out with LF line endings, so the script runs on Linux.
+- AWS work done by Claude at the owner's request, in the management account, us-east-1. The owner built and pushed the image and created the secret and the first security groups.
+  - Created EFS, the ECS roles and the task definition (Fargate steps D-F), checked them, then removed them for D-20. The Fargate security groups were removed too.
+  - Created the `rental-agent-ec2` role and instance profile, the `rental-ec2-sg` security group, the instance, an Elastic IP and the CloudFront distribution.
+- Checked on 2026-11-26 through the public CloudFront link:
+  - health returns ok, and HTTP redirects to HTTPS;
+  - direct access to the server times out;
+  - a visitor answer cites `[kb:check-in]`;
+  - staff login works;
+  - a back-office parity check for L-100 reports the seeded 2026-12-05 gap.
+- Found while deploying:
+  - the image scan reports 9 high findings, all in the base image's `openssl`; a rebuild with `--pull` may clear them;
+  - Git Bash on Windows rewrites `/...` paths in AWS CLI arguments unless `MSYS_NO_PATHCONV=1` is set;
+  - the container needs the metadata hop limit 2 to use the instance role.
 
 ## 2026-11-24 — Docs: live check status (PR #10, `claude/docs-live-status`)
 

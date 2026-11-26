@@ -4,6 +4,125 @@ Source: [Rental_Agent_Prototype_Architecture.pdf](source/Rental_Agent_Prototype_
 
 Owner decisions (2026-11-24, see `CLAUDE_CHANGELOG.md`): ECS Fargate with EFS; a Dockerfile plus this step-by-step guide (no infrastructure as code); no custom domain yet, so CloudFront's default `https://<id>.cloudfront.net` address is used; a public load balancer that only CloudFront can use.
 
+**Current deployment (2026-11-26, decision D-20): one small EC2 server behind CloudFront.** It replaced the Fargate plan below to cut the running cost from about $45-50 a month to about $12 (about $4 while the server is stopped). The Fargate sections are kept as the alternative for when the demo needs automatic replacement or more capacity.
+
+## EC2 host (current, D-20)
+
+```
+Reviewer browser ──HTTPS──▶ CloudFront (*.cloudfront.net, default certificate)
+                                │  HTTP, port 80
+                                ▼
+                 EC2 t3.micro, Amazon Linux 2023, Elastic IP
+                 · security group: inbound TCP 80 only from CloudFront's origin-facing prefix list; no SSH
+                 · Docker runs the pinned image as a systemd service (restarts on failure and on reboot)
+                 · /srv/rental-data on the encrypted root disk → /data in the container (SQLite /data/app.db)
+                 · instance role: Bedrock InvokeModel on the two models, ECR pull, read the staff secret, SSM
+                 · STAFF_PASSWORD read from Secrets Manager at each start into /run (memory only)
+                                │
+                                ▼
+                 Amazon Bedrock (InvokeModel API), us-east-1
+```
+
+Trade-offs accepted for a demo:
+
+- One server, no automatic replacement. If it fails, start it again or launch a new one from the same start-up script. The database lives on the server's disk, so terminating the server deletes it. Stopping it does not.
+- The CloudFront-to-server leg is plain HTTP, as in the Fargate plan.
+- The security group admits any CloudFront distribution, not only ours, because there's no load balancer to check D-17's secret header. Someone would need the server's address and their own distribution to reach it. A header check in the app would close this gap; it's not built.
+- You patch the server: run `sudo dnf upgrade -y` and reboot now and then, or launch a fresh server from the latest Amazon Linux image.
+- Shell access is through Systems Manager Session Manager only (no SSH key, no port 22).
+
+Resources (names only; IDs stay out of git): ECR repository `rental_agent_prototype`; secret `rental-agent/staff-password`; security group `rental-ec2-sg`; IAM role and instance profile `rental-agent-ec2`; instance and Elastic IP tagged `Name=rental-agent`; one CloudFront distribution with the comment `rental-agent-prototype demo (EC2 origin)`.
+
+### E.1 Image
+
+Build and push from AWS CloudShell (it has Docker), tagging both `latest` and the short commit SHA:
+
+```bash
+git clone https://github.com/dunascode-prog/rental_agent_prototype.git && cd rental_agent_prototype
+export REGION=us-east-1 ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
+export REGISTRY=$ACCOUNT.dkr.ecr.$REGION.amazonaws.com REPO=rental_agent_prototype TAG=$(git rev-parse --short HEAD)
+aws ecr create-repository --repository-name $REPO --image-scanning-configuration scanOnPush=true   # first time only
+docker build --pull -t $REPO:latest .
+aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $REGISTRY
+docker tag $REPO:latest $REGISTRY/$REPO:latest && docker tag $REPO:latest $REGISTRY/$REPO:$TAG
+docker push $REGISTRY/$REPO:latest && docker push $REGISTRY/$REPO:$TAG
+```
+
+### E.2 Staff password
+
+```bash
+aws secretsmanager create-secret --name rental-agent/staff-password --secret-string "$(openssl rand -base64 18)"
+```
+
+Read it when you need to log in: `aws secretsmanager get-secret-value --secret-id rental-agent/staff-password --query SecretString --output text`.
+
+### E.3 Instance role
+
+Trust policy: `ec2.amazonaws.com`, limited with `aws:SourceAccount` to your account. Permissions:
+
+- inline `bedrock-invoke`: the same Bedrock policy as the Fargate task role in 3.5 below, with the two inference-profile and two foundation-model ARNs;
+- inline `staff-secret`: `secretsmanager:GetSecretValue` on the secret's ARN only;
+- managed `AmazonEC2ContainerRegistryReadOnly` (pull the image) and `AmazonSSMManagedInstanceCore` (Session Manager and Run Command).
+
+Create an instance profile with the same name and add the role to it.
+
+### E.4 Security group
+
+`rental-ec2-sg` in the default VPC: inbound TCP 80 from the managed prefix list `com.amazonaws.global.cloudfront.origin-facing`; default outbound rule. Nothing else inbound.
+
+### E.5 Server
+
+1. Copy [`deploy/ec2-userdata.sh`](../deploy/ec2-userdata.sh), replace `__ACCOUNT__` with the account ID and set the image tag in `IMAGE`.
+2. Launch:
+
+```bash
+aws ec2 run-instances --image-id <al2023-x86_64-ami> --instance-type t3.micro \
+  --subnet-id <public-subnet> --security-group-ids <rental-ec2-sg-id> \
+  --iam-instance-profile Name=rental-agent-ec2 \
+  --metadata-options HttpTokens=required,HttpPutResponseHopLimit=2,HttpEndpoint=enabled \
+  --block-device-mappings 'DeviceName=/dev/xvda,Ebs={VolumeSize=8,VolumeType=gp3,Encrypted=true,DeleteOnTermination=true}' \
+  --credit-specification CpuCredits=standard \
+  --user-data file://ec2-userdata.sh \
+  --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=rental-agent}]'
+```
+
+Get the AMI ID from the public parameter `/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64`. Two settings matter:
+
+- `HttpPutResponseHopLimit=2` lets the container reach the instance metadata service through Docker's network, so the app gets the role's credentials. With the default of 1, Bedrock calls fail with missing credentials.
+- `CpuCredits=standard` keeps the t3.micro from billing for extra CPU.
+
+3. Allocate an Elastic IP and associate it with the instance, so the server's public DNS name (CloudFront's origin) survives stop and start.
+4. The first start takes about 3-5 minutes (Docker install and image pull). Check with Run Command or Session Manager: `curl -s http://127.0.0.1/health`.
+
+On Windows Git Bash, set `MSYS_NO_PATHCONV=1` before AWS CLI commands that take paths such as `/rental-agent` or `/aws/service/...`, or Git Bash rewrites them into Windows paths.
+
+### E.6 CloudFront
+
+Same settings as 3.9 below, with the origin set to the Elastic IP's public DNS name (`ec2-<ip>.compute-1.amazonaws.com`), HTTP only, port 80, no custom header. Price class 100 is enough for a demo.
+
+### E.7 Check it works
+
+- `https://<id>.cloudfront.net/health` returns `{"status":"ok"}`; `http://` redirects to `https://`.
+- The server's address directly times out (security group).
+- A visitor question such as "What time is check-in?" returns an answer with `[kb:check-in]`.
+- Staff login with the secret's password works, and a back-office parity check for L-100, 2026-12-01 to 2026-12-07, reports the seeded 2026-12-05 gap.
+
+All four passed on 2026-11-26.
+
+### E.8 Updating, pausing and tearing down
+
+- **Update:** push a new image tag, edit `IMAGE` in `/etc/rental-agent.conf` on the server (Session Manager), then `sudo systemctl restart rental-agent`. Data in `/srv/rental-data` is kept.
+- **Pause:** `aws ec2 stop-instances --instance-ids <id>`. You keep paying for the disk and the Elastic IP (about $4 a month). Start it again with `start-instances`.
+- **Tear down:**
+  1. Disable and delete the CloudFront distribution.
+  2. Terminate the instance, then release the Elastic IP.
+  3. Delete the security group, the role (detach and delete its policies first) and the instance profile.
+  4. Delete the secret and the ECR repository.
+
+## Alternative: ECS Fargate (not deployed)
+
+The sections below are the original Option B plan (decisions D-16 and D-17). They were partly built on 2026-11-26 and then removed when D-20 chose the EC2 host. Use them if the demo needs a managed, self-replacing service.
+
 ![Figure 3. Deployment options](source/diagrams/figure_03.png)
 
 ## 1. What gets built
@@ -46,6 +165,7 @@ Placeholders used below: `<region>`, `<account-id>`, `<vpc-id>`, `<public-subnet
 ### 3.1 Push the image to ECR
 
 ```bash
+# The deployed repository is named rental_agent_prototype; any valid name works if used consistently.
 aws ecr create-repository --repository-name rental-agent-prototype --region <region>
 aws ecr get-login-password --region <region> | docker login --username AWS --password-stdin <account-id>.dkr.ecr.<region>.amazonaws.com
 docker build -t rental-agent-prototype .
@@ -211,5 +331,5 @@ Open `https://<id>.cloudfront.net` once the distribution is deployed.
 
 ## 6. Not verified
 
-- These steps were written from AWS and Anthropic documentation and haven't been run end to end yet. The image build and `/health` start-up are checked in CI.
+- The Fargate steps were written from AWS and Anthropic documentation. They haven't been run end to end. Steps 3.2 to 3.6 were run on 2026-11-26 and then removed for D-20. The EC2 steps above have been run and checked. The image build and `/health` start-up are checked in CI.
 - The IAM resources for cross-region inference profiles: if a call is denied, compare the ARN in the error message with the policy.

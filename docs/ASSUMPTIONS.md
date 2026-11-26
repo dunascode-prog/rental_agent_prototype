@@ -97,7 +97,7 @@ Updated after PR #2 (implementation) was merged on 2026-11-24, and again after t
 | SR-08, SR-09, SR-10 | Resolved | README "Run" and "Test", HANDOVER filled in |
 | SR-11 | Resolved in code | `auth.py` falls back to bcrypt when argon2 is unavailable; no bcrypt package added |
 | SR-12 | No change | Scaffold choices kept |
-| SR-13 | Resolved | `Dockerfile` and `docs/DEPLOYMENT.md` added for Option B (PR #7); not yet deployed |
+| SR-13 | Resolved | `Dockerfile` and `docs/DEPLOYMENT.md` added for Option B (PR #7); deployed on 2026-11-26 as one EC2 server behind CloudFront (D-20) |
 | SR-14 | Resolved | UI built: chat, register/login, approval cards, parity panel, change log |
 | PA-01 | Resolved | D-06 |
 | PA-02 | Resolved | D-05 |
